@@ -70,7 +70,8 @@ class HomeScreenViewModel(
             searchRepository.onSuggestionSelected(suggestion)
 
             // We collect just the first result that comes from the flow.
-            val searchResult = searchRepository.searchResults.first().firstOrNull() ?: return@launch
+            val searchResult = searchRepository.searchResult.first { it != null } ?: return@launch
+
 
             // Now that we have the destination, find the user's current location.
             fusedLocationClient.lastLocation.addOnSuccessListener { location ->
@@ -78,6 +79,7 @@ class HomeScreenViewModel(
                     val origin = Point.fromLngLat(it.longitude, it.latitude)
                     // With both origin and destination, fetch the route.
                     // The UI is already observing `directionsRoute` and will update automatically.
+
                     navigationRepository.fetchRoute(origin, searchResult.coordinate)
                 }
             }

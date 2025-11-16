@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -28,6 +29,7 @@ import androidx.navigation.NavHostController
 import com.mapbox.common.location.Location
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
+import com.mapbox.maps.EdgeInsets
 import com.mapbox.maps.MapView
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.locationcomponent.createDefault2DPuck
@@ -78,6 +80,7 @@ fun HomeScreen(
     }
 
     val context = LocalContext.current
+    val density = LocalDensity.current
 
     val mapViewState = remember { mutableStateOf<MapView?>(null) }
     val navigationLocationProvider = remember { NavigationLocationProvider() }
@@ -97,6 +100,8 @@ fun HomeScreen(
         )
     }
 
+    var lastLocation by remember { mutableStateOf<Point?>(null) }
+
     val locationObserver = remember {
         object : LocationObserver {
             var firstLocationReceived = false
@@ -104,6 +109,7 @@ fun HomeScreen(
 
             override fun onNewLocationMatcherResult(locationMatcherResult: LocationMatcherResult) {
                 val enhanced = locationMatcherResult.enhancedLocation
+                lastLocation = Point.fromLngLat(enhanced.longitude, enhanced.latitude)
                 navigationLocationProvider.changePosition(
                     location = enhanced,
                     keyPoints = locationMatcherResult.keyPoints
@@ -113,12 +119,14 @@ fun HomeScreen(
 
                 if (!firstLocationReceived) {
                     firstLocationReceived = true
-                    mapViewState.value?.camera?.easeTo(
-                        CameraOptions.Builder()
-                            .center(Point.fromLngLat(enhanced.longitude, enhanced.latitude))
-                            .zoom(16.0)
-                            .build()
-                    )
+                    lastLocation?.let {
+                        mapViewState.value?.camera?.easeTo(
+                            CameraOptions.Builder()
+                                .center(it)
+                                .zoom(16.0)
+                                .build()
+                        )
+                    }
                 }
 
                 if (trainingState == TrainingState.RUNNING) {
@@ -147,8 +155,8 @@ fun HomeScreen(
             mapboxNavigation.setNavigationRoutes(emptyList())
             val mv = mapViewState.value ?: return@LaunchedEffect
             mv.mapboxMap.style?.let { style ->
-                routeLineApi.clearRouteLine {
-                    routeLineView.renderClearRouteLineValue(style, it)
+                routeLineApi.clearRouteLine { clearRouteLineValue ->
+                    routeLineView.renderClearRouteLineValue(style, clearRouteLineValue)
                 }
             }
         }
@@ -184,7 +192,16 @@ fun HomeScreen(
 
                     mapViewState.value = this
 
-                    viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap)
+                    viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap).apply {
+                        overviewPadding = with(density) {
+                            EdgeInsets(
+                                140.dp.toPx().toDouble(),
+                                40.dp.toPx().toDouble(),
+                                150.dp.toPx().toDouble(),
+                                40.dp.toPx().toDouble()
+                            )
+                        }
+                    }
                     navigationCamera = NavigationCamera(mapboxMap, camera, viewportDataSource!!)
                 }
             },
@@ -215,7 +232,18 @@ fun HomeScreen(
                         Text("Start Navigation")
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Button(onClick = { viewModel.clearRoute() }) {
+                    Button(onClick = {
+                        viewModel.clearRoute()
+                        viewportDataSource?.clearRouteData()
+                        lastLocation?.let {
+                            mapViewState.value?.camera?.easeTo(
+                                CameraOptions.Builder()
+                                    .center(it)
+                                    .zoom(16.0)
+                                    .build()
+                            )
+                        }
+                    }) {
                         Text("Clear Route")
                     }
                 } else {
