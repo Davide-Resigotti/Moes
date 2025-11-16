@@ -36,7 +36,6 @@ import com.mapbox.maps.plugin.locationcomponent.createDefault2DPuck
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.navigation.base.ExperimentalPreviewMapboxNavigationAPI
 import com.mapbox.navigation.base.options.NavigationOptions
-import com.mapbox.navigation.base.route.NavigationRoute
 import com.mapbox.navigation.core.MapboxNavigationProvider
 import com.mapbox.navigation.core.trip.session.LocationMatcherResult
 import com.mapbox.navigation.core.trip.session.LocationObserver
@@ -105,6 +104,7 @@ fun HomeScreen(
     val locationObserver = remember {
         object : LocationObserver {
             var firstLocationReceived = false
+
             override fun onNewRawLocation(rawLocation: Location) {}
 
             override fun onNewLocationMatcherResult(locationMatcherResult: LocationMatcherResult) {
@@ -119,14 +119,12 @@ fun HomeScreen(
 
                 if (!firstLocationReceived) {
                     firstLocationReceived = true
-                    lastLocation?.let {
-                        mapViewState.value?.camera?.easeTo(
-                            CameraOptions.Builder()
-                                .center(it)
-                                .zoom(16.0)
-                                .build()
-                        )
-                    }
+                    mapViewState.value?.camera?.easeTo(
+                        CameraOptions.Builder()
+                            .center(Point.fromLngLat(enhanced.longitude, enhanced.latitude))
+                            .zoom(16.0)
+                            .build()
+                    )
                 }
 
                 if (trainingState == TrainingState.RUNNING) {
@@ -201,7 +199,18 @@ fun HomeScreen(
                                 40.dp.toPx().toDouble()
                             )
                         }
+                        followingPadding = with(density) {
+                            EdgeInsets(
+                                180.dp.toPx().toDouble(),
+                                40.dp.toPx().toDouble(),
+                                330.dp.toPx().toDouble(),
+                                40.dp.toPx().toDouble()
+                            )
+                        }
                     }
+                    viewportDataSource?.followingZoomPropertyOverride(18.0)
+                    viewportDataSource?.followingPitchPropertyOverride(0.0)
+
                     navigationCamera = NavigationCamera(mapboxMap, camera, viewportDataSource!!)
                 }
             },
@@ -235,19 +244,14 @@ fun HomeScreen(
                     Button(onClick = {
                         viewModel.clearRoute()
                         viewportDataSource?.clearRouteData()
-                        lastLocation?.let {
-                            mapViewState.value?.camera?.easeTo(
-                                CameraOptions.Builder()
-                                    .center(it)
-                                    .zoom(16.0)
-                                    .build()
-                            )
-                        }
                     }) {
                         Text("Clear Route")
                     }
                 } else {
-                    Button(onClick = { viewModel.onStartTraining() }) {
+                    Button(onClick = {
+                        navigationCamera?.requestNavigationCameraToFollowing()
+                        viewModel.onStartTraining()
+                    }) {
                         Text("Start Workout")
                     }
                 }
@@ -261,7 +265,9 @@ fun HomeScreen(
                 distance = liveTrainingSession?.totalDistance() ?: 0.0,
                 onPauseClick = { viewModel.onPauseTraining() },
                 onResumeClick = { viewModel.onResumeTraining() },
-                onStopClick = { viewModel.onStopTraining() }
+                onStopClick = {
+                    viewModel.onStopTraining()
+                }
             )
         }
     }

@@ -1,14 +1,16 @@
 package com.moes.ui.composables
 
 import android.annotation.SuppressLint
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Face
@@ -17,6 +19,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -39,40 +42,50 @@ fun TrainingOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f)),
+            .padding(bottom = 32.dp, start = 16.dp, end = 16.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            shadowElevation = 4.dp
         ) {
-            // Stats Row
-            Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
-                StatItem(label = "Duration", value = formatDuration(duration))
-                StatItem(label = "Distance (km)", value = String.format("%.2f", distance / 1000))
-            }
-
-            // Buttons Row
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Button(
-                    onClick = onStopClick,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                ) {
-                    Icon(Icons.Default.Clear, contentDescription = "Stop Training")
-                    Text("Stop")
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Stats Row
+                Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+                    StatItem(label = "Duration", value = formatDuration(duration))
+                    StatItem(
+                        label = "Distance (km)",
+                        value = String.format("%.2f", distance / 1000)
+                    )
                 }
 
-                Spacer(modifier = Modifier.width(16.dp))
-
-                if (trainingState == TrainingState.RUNNING) {
-                    Button(onClick = onPauseClick) {
-                        Icon(Icons.Default.Face, contentDescription = "Pause Training")
-                        Text("Pause")
+                // Buttons Row
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Button(
+                        onClick = onStopClick,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                    ) {
+                        Icon(Icons.Default.Clear, contentDescription = "Stop Training")
+                        Text("Stop")
                     }
-                } else if (trainingState == TrainingState.PAUSED) {
-                    Button(onClick = onResumeClick) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = "Resume Training")
-                        Text("Resume")
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    if (trainingState == TrainingState.RUNNING) {
+                        Button(onClick = onPauseClick) {
+                            Icon(Icons.Default.Face, contentDescription = "Pause Training")
+                            Text("Pause")
+                        }
+                    } else if (trainingState == TrainingState.PAUSED) {
+                        Button(onClick = onResumeClick) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = "Resume Training")
+                            Text("Resume")
+                        }
                     }
                 }
             }
@@ -83,8 +96,8 @@ fun TrainingOverlay(
 @Composable
 private fun StatItem(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = label, style = MaterialTheme.typography.labelMedium, color = Color.White)
-        Text(text = value, style = MaterialTheme.typography.displaySmall, color = Color.White)
+        Text(text = label, style = MaterialTheme.typography.labelMedium)
+        Text(text = value, style = MaterialTheme.typography.displaySmall)
     }
 }
 

@@ -69,8 +69,17 @@ fun SearchBar(
                 .padding(horizontal = 8.dp)
         ) {
             items(suggestions) { suggestion ->
+                var suggestionName = suggestion.name;
+
+                if (suggestion.address?.street != null) {
+                    suggestionName += ", " + suggestion.address?.street;
+                }
+                if (suggestion.address?.place != null) {
+                    suggestionName += ", " + suggestion.address?.place;
+                }
+
                 Text(
-                    text = suggestion.name,
+                    text = suggestionName,
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onSuggestionSelected(suggestion) }
