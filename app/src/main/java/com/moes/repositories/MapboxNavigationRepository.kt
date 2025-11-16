@@ -23,8 +23,6 @@ class MapboxNavigationRepository {
     val navigationRoutes: StateFlow<List<NavigationRoute>> = _navigationRoutes
 
     fun fetchRoute(coordinates: List<Point>) {
-        Log.d("MapboxNavigationRepository", "Fetching route with coordinates: $coordinates")
-
         val routeOptions = RouteOptions.builder()
             .applyDefaultNavigationOptions()
             .coordinatesList(coordinates)
