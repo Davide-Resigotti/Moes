@@ -1,5 +1,6 @@
 package com.moes.repositories
 
+import android.util.Log
 import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.geojson.Point
 import com.mapbox.navigation.base.extensions.applyDefaultNavigationOptions
@@ -21,11 +22,12 @@ class MapboxNavigationRepository {
     private val _navigationRoutes = MutableStateFlow<List<NavigationRoute>>(emptyList())
     val navigationRoutes: StateFlow<List<NavigationRoute>> = _navigationRoutes
 
+    fun fetchRoute(coordinates: List<Point>) {
+        Log.d("MapboxNavigationRepository", "Fetching route with coordinates: $coordinates")
 
-    fun fetchRoute(origin: Point, destination: Point) {
         val routeOptions = RouteOptions.builder()
             .applyDefaultNavigationOptions()
-            .coordinatesList(listOf(origin, destination))
+            .coordinatesList(coordinates)
             .profile("walking")
             .build()
 
@@ -50,6 +52,10 @@ class MapboxNavigationRepository {
                 }
             }
         )
+    }
+
+    fun fetchRoute(origin: Point, destination: Point) {
+        fetchRoute(listOf(origin, destination))
     }
 
     fun clearRoute() {

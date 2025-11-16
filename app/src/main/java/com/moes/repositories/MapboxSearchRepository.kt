@@ -33,8 +33,8 @@ class MapboxSearchRepository(context: Context) {
     private val _searchSuggestions = MutableStateFlow<List<SearchSuggestion>>(emptyList())
     val searchSuggestions: StateFlow<List<SearchSuggestion>> = _searchSuggestions
 
-    private val _searchResults = MutableStateFlow<List<SearchResult>>(emptyList())
-    val searchResults: StateFlow<List<SearchResult>> = _searchResults
+    private val _searchResult = MutableStateFlow<SearchResult?>(null)
+    val searchResult: StateFlow<SearchResult?> = _searchResult
 
     private val searchCallback = object : SearchSelectionCallback {
         // Called when a suggestion is selected and resolved to a full SearchResult.
@@ -44,7 +44,7 @@ class MapboxSearchRepository(context: Context) {
             responseInfo: ResponseInfo
         ) {
             // Expose the single, selected result and clear the suggestions.
-            _searchResults.value = listOf(result)
+            _searchResult.value = result
             _searchSuggestions.value = emptyList()
         }
 
@@ -54,8 +54,6 @@ class MapboxSearchRepository(context: Context) {
             results: List<SearchResult>,
             responseInfo: ResponseInfo
         ) {
-            _searchResults.value = results
-            _searchSuggestions.value = emptyList()
         }
 
         // Called with auto-complete style suggestions as the user types.
@@ -64,14 +62,14 @@ class MapboxSearchRepository(context: Context) {
             responseInfo: ResponseInfo
         ) {
             _searchSuggestions.value = suggestions
-            _searchResults.value = emptyList() // Clear previous results when new suggestions appear
+            _searchResult.value = null // Clear previous results when new suggestions appear
         }
 
         override fun onError(e: Exception) {
             // Handle search errors, e.g., by logging or exposing an error state.
             e.printStackTrace()
             _searchSuggestions.value = emptyList()
-            _searchResults.value = emptyList()
+            _searchResult.value = null
         }
     }
 
@@ -106,6 +104,6 @@ class MapboxSearchRepository(context: Context) {
      */
     fun clear() {
         _searchSuggestions.value = emptyList()
-        _searchResults.value = emptyList()
+        _searchResult.value = null
     }
 }
