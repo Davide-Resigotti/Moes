@@ -14,16 +14,17 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.moes.data.Coordinate
-import com.moes.data.LiveTrainingSegment
-import com.moes.data.LiveTrainingSession
 import com.moes.data.TrainingSegment
 import com.moes.data.TrainingSession
 import com.moes.data.TrainingState
+import com.moes.data.live.LiveTrainingSegment
+import com.moes.data.live.LiveTrainingSession
+import com.moes.data.live.toTrainingSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.util.UUID
 
-class LocationService : Service() {
+class LiveTrainingService : Service() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
@@ -37,19 +38,15 @@ class LocationService : Service() {
             override fun onLocationResult(locationResult: LocationResult) {
                 locationResult.lastLocation?.let { location ->
                     val coordinate = Coordinate(location.latitude, location.longitude)
-                    
+
                     // --- IMMUTABLE UPDATE --- //
-                    // Create a new session object with the updated data.
                     liveTrainingSession = liveTrainingSession?.let { session ->
                         val currentSegment = session.segments.lastOrNull()
                         if (currentSegment != null) {
-                            // Create a new segment with the new coordinate added.
                             val updatedSegment = currentSegment.copy(
                                 coordinates = currentSegment.coordinates + coordinate
                             )
-                            // Create a new list of segments with the updated one.
                             val updatedSegments = session.segments.dropLast(1) + updatedSegment
-                            // Create a new session with the updated segments.
                             session.copy(segments = updatedSegments)
                         } else {
                             session // Should not happen if tracking
@@ -74,16 +71,15 @@ class LocationService : Service() {
     private fun startTracking() {
         liveTrainingSession = LiveTrainingSession(
             id = UUID.randomUUID().toString(),
-            startTime = System.currentTimeMillis()
         )
+        updateLiveData() // Notify the UI that a new session has begun
         resumeTracking() // Start the first segment
         startForegroundService()
     }
 
     private fun pauseTracking() {
-        if (_trainingState.value == TrainingState.TRACKING) {
+        if (_trainingState.value == TrainingState.RUNNING) {
             _trainingState.value = TrainingState.PAUSED
-            // Create a new session with the last segment's endTime updated.
             liveTrainingSession = liveTrainingSession?.let { session ->
                 val currentSegment = session.segments.lastOrNull()
                 if (currentSegment != null) {
@@ -100,27 +96,26 @@ class LocationService : Service() {
     }
 
     private fun resumeTracking() {
-        if (_trainingState.value != TrainingState.TRACKING) {
-            _trainingState.value = TrainingState.TRACKING
-            // Create a new session with a new, empty segment added.
+        if (_trainingState.value != TrainingState.RUNNING && liveTrainingSession != null) {
+            _trainingState.value = TrainingState.RUNNING
             liveTrainingSession = liveTrainingSession?.copy(
                 segments = liveTrainingSession!!.segments + LiveTrainingSegment(startTime = System.currentTimeMillis())
             )
+            updateLiveData() // Notify the UI that a new segment has been added
             startLocationUpdates()
         }
     }
 
     private fun stopTracking() {
-        if (_trainingState.value == TrainingState.TRACKING) {
+        if (_trainingState.value == TrainingState.RUNNING) {
             pauseTracking()
         }
         _trainingState.value = TrainingState.IDLE
-        liveTrainingSession?.let { session ->
-            val finalSession = session.copy(endTime = System.currentTimeMillis())
-            _completedTrainingSession.value = finalSession.toTrainingSession()
-        }
+        _completedTrainingSession.value = liveTrainingSession?.toTrainingSession()
+
         liveTrainingSession = null
         _liveTrainingSession.value = null
+
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -142,7 +137,8 @@ class LocationService : Service() {
     private fun startForegroundService() {
         val channelId = "location_service_channel"
         val notificationManager = getSystemService(NotificationManager::class.java)
-        val channel = NotificationChannel(channelId, "Location Service", NotificationManager.IMPORTANCE_LOW)
+        val channel =
+            NotificationChannel(channelId, "Location Service", NotificationManager.IMPORTANCE_LOW)
         notificationManager.createNotificationChannel(channel)
         val notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("Workout in Progress")
@@ -169,20 +165,4 @@ class LocationService : Service() {
         private val _completedTrainingSession = MutableStateFlow<TrainingSession?>(null)
         val completedTrainingSession: StateFlow<TrainingSession?> = _completedTrainingSession
     }
-}
-
-private fun LiveTrainingSession.toTrainingSession(): TrainingSession {
-    val finalSegments = this.segments.map { liveSegment ->
-        TrainingSegment(
-            startTime = liveSegment.startTime,
-            endTime = liveSegment.endTime ?: System.currentTimeMillis(),
-            coordinates = liveSegment.coordinates
-        )
-    }
-    return TrainingSession(
-        id = this.id,
-        startTime = this.startTime,
-        endTime = this.endTime ?: System.currentTimeMillis(),
-        segments = finalSegments
-    )
 }

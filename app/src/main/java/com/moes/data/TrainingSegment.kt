@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class TrainingSegment(
-    val startTime: Long,
-    val endTime: Long,
-    val coordinates: List<Coordinate>
-)
+    override val startTime: Long,
+    override val endTime: Long,
+    override val coordinates: List<Coordinate>
+) : BaseTrainingSegment
