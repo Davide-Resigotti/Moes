@@ -72,10 +72,10 @@ fun HomeScreen(
         key2 = trainingState
     ) {
         while (trainingState == TrainingState.RUNNING) {
-            value = liveTrainingSession?.totalDuration() ?: 0L
+            value = liveTrainingSession?.activeDuration() ?: 0L
             delay(500)
         }
-        value = liveTrainingSession?.totalDuration() ?: 0L
+        value = liveTrainingSession?.activeDuration() ?: 0L
     }
 
     val context = LocalContext.current
@@ -218,12 +218,20 @@ fun HomeScreen(
         )
 
         if (trainingState == TrainingState.IDLE) {
-            SearchBar(
-                query = searchQuery,
-                onQueryChanged = { viewModel.onSearchQueryChanged(it) },
-                suggestions = searchSuggestions,
-                onSuggestionSelected = { viewModel.onSuggestionSelected(it) }
-            )
+            Box(
+                Modifier.padding(
+                    top = 60.dp,
+                    start = 16.dp,
+                    end = 16.dp
+                )
+            ) {
+                SearchBar(
+                    query = searchQuery,
+                    onQueryChanged = { viewModel.onSearchQueryChanged(it) },
+                    suggestions = searchSuggestions,
+                    onSuggestionSelected = { viewModel.onSuggestionSelected(it) }
+                )
+            }
         }
 
         if (trainingState == TrainingState.IDLE) {
@@ -265,9 +273,7 @@ fun HomeScreen(
                 distance = liveTrainingSession?.totalDistance() ?: 0.0,
                 onPauseClick = { viewModel.onPauseTraining() },
                 onResumeClick = { viewModel.onResumeTraining() },
-                onStopClick = {
-                    viewModel.onStopTraining()
-                }
+                onStopClick = { viewModel.onStopTraining() }
             )
         }
     }
