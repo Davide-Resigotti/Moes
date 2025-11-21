@@ -8,7 +8,7 @@ interface BaseTrainingSession<T : BaseTrainingSegment> {
         return segments.sumOf { it.distance() }
     }
 
-    fun totalDuration(): Long {
+    fun activeDuration(): Long {
         if (segments.isEmpty()) return 0L
         return segments.sumOf { it.duration() }
     }
