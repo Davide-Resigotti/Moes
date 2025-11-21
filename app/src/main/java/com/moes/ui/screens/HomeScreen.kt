@@ -178,7 +178,7 @@ fun HomeScreen(
                 MapView(ctx).apply {
                     mapboxMap.setCamera(
                         CameraOptions.Builder()
-                            .zoom(14.0)
+                            .zoom(16.0)
                             .build()
                     )
 
