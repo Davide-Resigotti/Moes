@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "756626182923",
+    "project_id": "moesfodai",
+    "storage_bucket": "moesfodai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:756626182923:android:d400c53bad48aec881480e",
+        "android_client_info": {
+          "package_name": "com.moes"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDz3FjBqqD0sIGenAFbejHFdYFqINEppz4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
