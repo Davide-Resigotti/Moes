@@ -21,6 +21,10 @@ class MoesApplication : Application() {
                 NavigationOptions.Builder(this.applicationContext)
                     .build()
             )
+            MapboxNavigationProvider.create(
+                NavigationOptions.Builder(this.applicationContext)
+                    .build()
+            )
         }
     }
 }
