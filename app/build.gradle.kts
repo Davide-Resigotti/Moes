@@ -2,15 +2,13 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.2.21"
     id("com.google.gms.google-services")
 }
 
 android {
     namespace = "com.moes"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.moes"
@@ -44,7 +42,7 @@ android {
 }
 
 dependencies {
-    val nav_version = "2.9.5"
+    val navVersion = "2.9.6"
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -61,14 +59,14 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
-    implementation("com.google.android.gms:play-services-location:21.0.1")
-    implementation("com.mapbox.maps:android-ndk27:11.15.3")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("com.mapbox.maps:android-ndk27:11.16.1")
     implementation("com.mapbox.extension:maps-compose-ndk27:11.15.3")
     implementation("com.mapbox.search:mapbox-search-android-ndk27:2.16.1")
     implementation("com.mapbox.navigationcore:android-ndk27:3.16.1")
-    implementation("androidx.navigation:navigation-compose:$nav_version")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation("androidx.navigation:navigation-compose:$navVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
     implementation("com.google.firebase:firebase-analytics")
 }
