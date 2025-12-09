@@ -1,12 +1,16 @@
 package com.moes.ui.screens
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,22 +35,30 @@ import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.EdgeInsets
 import com.mapbox.maps.MapView
+import com.mapbox.maps.plugin.PuckBearing
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.locationcomponent.createDefault2DPuck
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.navigation.base.ExperimentalPreviewMapboxNavigationAPI
-import com.mapbox.navigation.base.options.NavigationOptions
+import com.mapbox.navigation.base.formatter.DistanceFormatterOptions
 import com.mapbox.navigation.core.MapboxNavigationProvider
+import com.mapbox.navigation.core.formatter.MapboxDistanceFormatter
 import com.mapbox.navigation.core.trip.session.LocationMatcherResult
 import com.mapbox.navigation.core.trip.session.LocationObserver
+import com.mapbox.navigation.core.trip.session.RouteProgressObserver
+import com.mapbox.navigation.tripdata.maneuver.api.MapboxManeuverApi
 import com.mapbox.navigation.ui.maps.camera.NavigationCamera
 import com.mapbox.navigation.ui.maps.camera.data.MapboxNavigationViewportDataSource
 import com.mapbox.navigation.ui.maps.location.NavigationLocationProvider
+import com.mapbox.navigation.ui.maps.route.arrow.api.MapboxRouteArrowApi
+import com.mapbox.navigation.ui.maps.route.arrow.api.MapboxRouteArrowView
+import com.mapbox.navigation.ui.maps.route.arrow.model.RouteArrowOptions
 import com.mapbox.navigation.ui.maps.route.line.api.MapboxRouteLineApi
 import com.mapbox.navigation.ui.maps.route.line.api.MapboxRouteLineView
 import com.mapbox.navigation.ui.maps.route.line.model.MapboxRouteLineApiOptions
 import com.mapbox.navigation.ui.maps.route.line.model.MapboxRouteLineViewOptions
 import com.moes.data.TrainingState
+import com.moes.ui.composables.InstructionBanner
 import com.moes.ui.composables.SearchBar
 import com.moes.ui.composables.TrainingOverlay
 import com.moes.ui.viewmodels.HomeScreenViewModel
@@ -65,6 +77,10 @@ fun HomeScreen(
     val searchSuggestions by viewModel.searchSuggestions.collectAsState()
     val trainingState by viewModel.trainingState.collectAsState()
     val liveTrainingSession by viewModel.liveTrainingSession.collectAsState()
+
+    // --- UI STATE FOR INSTRUCTIONS ---
+    var instructionText by remember { mutableStateOf("") }
+    var distanceText by remember { mutableStateOf("") }
 
     val liveDuration by produceState(
         initialValue = 0L,
@@ -86,6 +102,8 @@ fun HomeScreen(
 
     var viewportDataSource by remember { mutableStateOf<MapboxNavigationViewportDataSource?>(null) }
     var navigationCamera by remember { mutableStateOf<NavigationCamera?>(null) }
+
+    // --- MAPBOX API INITIALIZATION ---
     val routeLineApi = remember {
         MapboxRouteLineApi(MapboxRouteLineApiOptions.Builder().build())
     }
@@ -93,13 +111,50 @@ fun HomeScreen(
         MapboxRouteLineView(MapboxRouteLineViewOptions.Builder(context).build())
     }
 
-    val mapboxNavigation = remember {
-        MapboxNavigationProvider.create(
-            NavigationOptions.Builder(context).build()
+    val routeArrowApi = remember { MapboxRouteArrowApi() }
+    val routeArrowView = remember {
+        MapboxRouteArrowView(RouteArrowOptions.Builder(context).build())
+    }
+
+    // Helper to format distance and extract text
+    val maneuverApi = remember {
+        MapboxManeuverApi(
+            MapboxDistanceFormatter(DistanceFormatterOptions.Builder(context).build())
         )
     }
 
-    var lastLocation by remember { mutableStateOf<Point?>(null) }
+    val mapboxNavigation = remember {
+        MapboxNavigationProvider.retrieve();
+    }
+
+    // --- OBSERVERS ---
+    val routeProgressObserver = remember {
+        RouteProgressObserver { routeProgress ->
+            // 1. Update Camera
+            viewportDataSource?.onRouteProgressChanged(routeProgress)
+            viewportDataSource?.evaluate()
+
+            // 2. Update Arrows on Map
+            val style = mapViewState.value?.mapboxMap?.style
+            if (style != null) {
+                val maneuverArrowResult = routeArrowApi.addUpcomingManeuverArrow(routeProgress)
+                routeArrowView.renderManeuverUpdate(style, maneuverArrowResult)
+            }
+
+            // 3. Update UI Instructions
+            val maneuvers = maneuverApi.getManeuvers(routeProgress)
+            maneuvers.fold(
+                { error ->
+                    Log.e("HomeScreen", "Maneuver Error: ${error.errorMessage}")
+                },
+                { maneuverList ->
+                    val nextManeuver = maneuverList.firstOrNull()
+                    instructionText = nextManeuver?.primary?.text ?: "Follow Route"
+                    distanceText = nextManeuver?.stepDistance?.distanceRemaining.toString()
+                }
+            )
+        }
+    }
 
     val locationObserver = remember {
         object : LocationObserver {
@@ -109,7 +164,7 @@ fun HomeScreen(
 
             override fun onNewLocationMatcherResult(locationMatcherResult: LocationMatcherResult) {
                 val enhanced = locationMatcherResult.enhancedLocation
-                lastLocation = Point.fromLngLat(enhanced.longitude, enhanced.latitude)
+
                 navigationLocationProvider.changePosition(
                     location = enhanced,
                     keyPoints = locationMatcherResult.keyPoints
@@ -122,6 +177,7 @@ fun HomeScreen(
                     mapViewState.value?.camera?.easeTo(
                         CameraOptions.Builder()
                             .center(Point.fromLngLat(enhanced.longitude, enhanced.latitude))
+                            .bearing(enhanced.bearing)
                             .zoom(16.0)
                             .build()
                     )
@@ -133,6 +189,8 @@ fun HomeScreen(
             }
         }
     }
+
+    // --- SIDE EFFECTS ---
 
     LaunchedEffect(navigationRoutes) {
         if (navigationRoutes.isNotEmpty()) {
@@ -156,22 +214,30 @@ fun HomeScreen(
                 routeLineApi.clearRouteLine { clearRouteLineValue ->
                     routeLineView.renderClearRouteLineValue(style, clearRouteLineValue)
                 }
+                // Also clear arrows
+                routeArrowView.render(style, routeArrowApi.clearArrows())
             }
         }
     }
 
     DisposableEffect(Unit) {
         mapboxNavigation.registerLocationObserver(locationObserver)
+        mapboxNavigation.registerRouteProgressObserver(routeProgressObserver) // Register Progress
         mapboxNavigation.startTripSession()
 
         onDispose {
             mapboxNavigation.unregisterLocationObserver(locationObserver)
+            mapboxNavigation.unregisterRouteProgressObserver(routeProgressObserver) // Unregister
             mapboxNavigation.stopTripSession()
             MapboxNavigationProvider.destroy()
         }
     }
 
+    // --- UI LAYOUT ---
+
     Box(Modifier.fillMaxSize()) {
+
+        // 1. BACKGROUND: MAP
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
@@ -186,6 +252,8 @@ fun HomeScreen(
                         setLocationProvider(navigationLocationProvider)
                         locationPuck = createDefault2DPuck(withBearing = true)
                         enabled = true
+                        puckBearingEnabled = true
+                        puckBearing = PuckBearing.COURSE // Fixes the rotation issue
                     }
 
                     mapViewState.value = this
@@ -193,23 +261,25 @@ fun HomeScreen(
                     viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap).apply {
                         overviewPadding = with(density) {
                             EdgeInsets(
-                                140.dp.toPx().toDouble(),
+                                100.dp.toPx().toDouble(),
                                 40.dp.toPx().toDouble(),
-                                150.dp.toPx().toDouble(),
+                                100.dp.toPx().toDouble(),
                                 40.dp.toPx().toDouble()
                             )
                         }
                         followingPadding = with(density) {
                             EdgeInsets(
+                                // Use HIGH Top padding to push the puck DOWN to the bottom
                                 180.dp.toPx().toDouble(),
                                 40.dp.toPx().toDouble(),
-                                330.dp.toPx().toDouble(),
+                                // Use LOW Bottom padding so we can see the road ahead
+                                60.dp.toPx().toDouble(),
                                 40.dp.toPx().toDouble()
                             )
                         }
                     }
+                    viewportDataSource?.followingPitchPropertyOverride(45.0)
                     viewportDataSource?.followingZoomPropertyOverride(18.0)
-                    viewportDataSource?.followingPitchPropertyOverride(0.0)
 
                     navigationCamera = NavigationCamera(mapboxMap, camera, viewportDataSource!!)
                 }
@@ -217,34 +287,59 @@ fun HomeScreen(
             update = {}
         )
 
+        // 2. OVERLAY: TOP AREA (Search or Instructions)
         if (trainingState == TrainingState.IDLE) {
             Box(
-                Modifier.padding(
-                    top = 60.dp,
-                    start = 16.dp,
-                    end = 16.dp
-                )
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding() // Padding for status bar
+                    .padding(top = 16.dp, start = 16.dp, end = 16.dp)
             ) {
                 SearchBar(
                     query = searchQuery,
                     onQueryChanged = { viewModel.onSearchQueryChanged(it) },
                     suggestions = searchSuggestions,
-                    onSuggestionSelected = { viewModel.onSuggestionSelected(it) }
+                    onSuggestionSelected = { viewModel.onSuggestionSelected(it) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        } else if ((trainingState == TrainingState.RUNNING || trainingState == TrainingState.PAUSED) && navigationRoutes.isNotEmpty()) {
+            // Show Instructions when Running AND we have a route
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+            ) {
+                InstructionBanner(
+                    instruction = instructionText,
+                    distanceRemaining = distanceText,
                 )
             }
         }
 
+        // 3. OVERLAY: BOTTOM AREA (Buttons or Stats)
         if (trainingState == TrainingState.IDLE) {
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .navigationBarsPadding() // Padding for nav bar
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (navigationRoutes.isNotEmpty()) {
                     Button(onClick = {
-                        navigationCamera?.requestNavigationCameraToFollowing()
+                        // 1. Change State
                         viewModel.onStartTraining()
+
+                        // 2. Force Camera Update IMMEDIATELY
+                        navigationCamera?.requestNavigationCameraToFollowing()
+
+                        // 3. Optional: Manually center on the last known location right now
+                        // This prevents the "waiting for next GPS signal" lag
+                        navigationLocationProvider.lastLocation?.let { loc ->
+                            viewportDataSource?.onLocationChanged(loc)
+                            viewportDataSource?.evaluate()
+                        }
                     }) {
                         Text("Start Navigation")
                     }
@@ -267,14 +362,20 @@ fun HomeScreen(
         }
 
         if (trainingState == TrainingState.RUNNING || trainingState == TrainingState.PAUSED) {
-            TrainingOverlay(
-                trainingState = trainingState,
-                duration = liveDuration,
-                distance = liveTrainingSession?.totalDistance() ?: 0.0,
-                onPauseClick = { viewModel.onPauseTraining() },
-                onResumeClick = { viewModel.onResumeTraining() },
-                onStopClick = { viewModel.onStopTraining() }
-            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+            ) {
+                TrainingOverlay(
+                    trainingState = trainingState,
+                    duration = liveDuration,
+                    distance = liveTrainingSession?.totalDistance() ?: 0.0,
+                    onPauseClick = { viewModel.onPauseTraining() },
+                    onResumeClick = { viewModel.onResumeTraining() },
+                    onStopClick = { viewModel.onStopTraining() }
+                )
+            }
         }
     }
 }
