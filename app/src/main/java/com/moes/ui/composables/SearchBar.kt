@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.unit.dp
 import com.mapbox.search.result.SearchSuggestion
 import kotlinx.coroutines.delay
@@ -36,7 +37,8 @@ fun SearchBar(
     query: String,
     onQueryChanged: (String) -> Unit,
     suggestions: List<SearchSuggestion>,
-    onSuggestionSelected: (SearchSuggestion) -> Unit
+    onSuggestionSelected: (SearchSuggestion) -> Unit,
+    modifier: Modifier
 ) {
     var internalQuery by remember { mutableStateOf(query) }
 
@@ -56,6 +58,7 @@ fun SearchBar(
     Surface(
         shape = RoundedCornerShape(16.dp),
         shadowElevation = 4.dp,
+        modifier = modifier
     ) {
         Column {
             Row(

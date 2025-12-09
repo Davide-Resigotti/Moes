@@ -2,9 +2,7 @@ package com.moes
 
 import android.app.Application
 import com.mapbox.navigation.base.options.NavigationOptions
-import com.mapbox.navigation.core.MapboxNavigation
 import com.mapbox.navigation.core.MapboxNavigationProvider
-import com.mapbox.navigation.core.lifecycle.MapboxNavigationApp
 
 /**
  * The Application class for the Moes app.
@@ -16,16 +14,9 @@ class MoesApplication : Application() {
         super.onCreate()
 
         // Initialize Mapbox Navigation
-        if (!MapboxNavigationApp.isSetup()) {
-            MapboxNavigationApp.setup(
-                NavigationOptions.Builder(this.applicationContext)
-                    .build()
-            )
-
-            MapboxNavigationProvider.create(
-                NavigationOptions.Builder(this.applicationContext)
-                    .build()
-            )
-        }
+        MapboxNavigationProvider.create(
+            NavigationOptions.Builder(this.applicationContext)
+                .build()
+        )
     }
 }
