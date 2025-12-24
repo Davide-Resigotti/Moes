@@ -13,7 +13,7 @@ fun MoesNavHost() {
 
     NavHost(navController = navController, startDestination = Routes.HOME) {
         composable(Routes.HOME) {
-            HomeScreen(navController = navController)
+            HomeScreen()
         }
     }
 }
