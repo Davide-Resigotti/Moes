@@ -9,9 +9,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -27,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.modifier.modifierLocalConsumer
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import com.mapbox.search.result.SearchSuggestion
 import kotlinx.coroutines.delay
@@ -41,10 +44,14 @@ fun SearchBar(
     modifier: Modifier
 ) {
     var internalQuery by remember { mutableStateOf(query) }
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(query) {
         if (internalQuery != query) {
             internalQuery = query
+        }
+        if (query.isEmpty()) {
+            focusManager.clearFocus()
         }
     }
 
@@ -73,7 +80,7 @@ fun SearchBar(
                 TextField(
                     value = internalQuery,
                     onValueChange = { internalQuery = it },
-                    placeholder = { Text("Search for a destination...") },
+                    placeholder = { Text("Search ...") },
                     modifier = Modifier
                         .fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
@@ -84,6 +91,16 @@ fun SearchBar(
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent,
                     ),
+                    trailingIcon = {
+                        if (internalQuery.isNotEmpty()) {
+                            IconButton(onClick = { internalQuery = "" }) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Clear search"
+                                )
+                            }
+                        }
+                    }
                 )
             }
 
@@ -98,7 +115,10 @@ fun SearchBar(
                             text = suggestion.name,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onSuggestionSelected(suggestion) }
+                                .clickable {
+                                    focusManager.clearFocus()
+                                    onSuggestionSelected(suggestion)
+                                }
                                 .padding(vertical = 12.dp, horizontal = 8.dp)
                         )
                     }

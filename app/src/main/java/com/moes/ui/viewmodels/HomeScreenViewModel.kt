@@ -84,8 +84,10 @@ class HomeScreenViewModel(
                 }
             }
 
-            // Finally, clear the search bar and suggestions for a clean UI.
-            clearSearch()
+            // Set the search query to the selected suggestion's name and clear suggestions.
+            _searchQuery.value = suggestion.name
+            searchRepository.clear()
+
         }
     }
 
@@ -108,6 +110,7 @@ class HomeScreenViewModel(
 
     fun onStopTraining() {
         trainingRepository.stopTracking()
+        clearRoute()
     }
 
     /**
@@ -115,5 +118,6 @@ class HomeScreenViewModel(
      */
     fun clearRoute() {
         navigationRepository.clearRoute()
+        clearSearch()
     }
 }

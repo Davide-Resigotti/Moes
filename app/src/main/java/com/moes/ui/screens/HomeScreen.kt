@@ -11,7 +11,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.material3.Button
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -30,13 +35,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.mapbox.android.gestures.MoveGestureDetector
 import com.mapbox.common.location.Location
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.EdgeInsets
 import com.mapbox.maps.MapView
 import com.mapbox.maps.plugin.PuckBearing
+import com.mapbox.maps.plugin.animation.MapAnimationOptions
 import com.mapbox.maps.plugin.animation.camera
+import com.mapbox.maps.plugin.gestures.OnMoveListener
+import com.mapbox.maps.plugin.gestures.addOnMoveListener
 import com.mapbox.maps.plugin.locationcomponent.createDefault2DPuck
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.navigation.base.ExperimentalPreviewMapboxNavigationAPI
@@ -82,6 +91,9 @@ fun HomeScreen(
     var instructionText by remember { mutableStateOf("") }
     var distanceText by remember { mutableStateOf("") }
 
+    // --- CACHE LAST LOCATION FOR INSTANT BUTTON RESPONSE ---
+    var lastEnhancedLocation by remember { mutableStateOf<Location?>(null) }
+
     val liveDuration by produceState(
         initialValue = 0L,
         key1 = liveTrainingSession,
@@ -116,7 +128,6 @@ fun HomeScreen(
         MapboxRouteArrowView(RouteArrowOptions.Builder(context).build())
     }
 
-    // Helper to format distance and extract text
     val maneuverApi = remember {
         MapboxManeuverApi(
             MapboxDistanceFormatter(DistanceFormatterOptions.Builder(context).build())
@@ -130,23 +141,18 @@ fun HomeScreen(
     // --- OBSERVERS ---
     val routeProgressObserver = remember {
         RouteProgressObserver { routeProgress ->
-            // 1. Update Camera
             viewportDataSource?.onRouteProgressChanged(routeProgress)
             viewportDataSource?.evaluate()
 
-            // 2. Update Arrows on Map
             val style = mapViewState.value?.mapboxMap?.style
             if (style != null) {
                 val maneuverArrowResult = routeArrowApi.addUpcomingManeuverArrow(routeProgress)
                 routeArrowView.renderManeuverUpdate(style, maneuverArrowResult)
             }
 
-            // 3. Update UI Instructions
             val maneuvers = maneuverApi.getManeuvers(routeProgress)
             maneuvers.fold(
-                { error ->
-                    Log.e("HomeScreen", "Maneuver Error: ${error.errorMessage}")
-                },
+                { error -> Log.e("HomeScreen", "Maneuver Error: ${error.errorMessage}") },
                 { maneuverList ->
                     val nextManeuver = maneuverList.firstOrNull()
                     instructionText = nextManeuver?.primary?.text ?: "Follow Route"
@@ -165,6 +171,9 @@ fun HomeScreen(
             override fun onNewLocationMatcherResult(locationMatcherResult: LocationMatcherResult) {
                 val enhanced = locationMatcherResult.enhancedLocation
 
+                // Save this for the button to use later
+                lastEnhancedLocation = enhanced
+
                 navigationLocationProvider.changePosition(
                     location = enhanced,
                     keyPoints = locationMatcherResult.keyPoints
@@ -182,21 +191,14 @@ fun HomeScreen(
                             .build()
                     )
                 }
-
-                if (trainingState == TrainingState.RUNNING) {
-                    navigationCamera?.requestNavigationCameraToFollowing()
-                }
             }
         }
     }
 
     // --- SIDE EFFECTS ---
-
     LaunchedEffect(navigationRoutes) {
         if (navigationRoutes.isNotEmpty()) {
             mapboxNavigation.setNavigationRoutes(navigationRoutes)
-
-            // Draw the route on the map
             val mv = mapViewState.value ?: return@LaunchedEffect
             routeLineApi.setNavigationRoutes(navigationRoutes) { drawData ->
                 mv.mapboxMap.style?.let { style ->
@@ -207,14 +209,12 @@ fun HomeScreen(
             viewportDataSource?.evaluate()
             navigationCamera?.requestNavigationCameraToOverview()
         } else {
-            // Clear the route from the map
             mapboxNavigation.setNavigationRoutes(emptyList())
             val mv = mapViewState.value ?: return@LaunchedEffect
             mv.mapboxMap.style?.let { style ->
                 routeLineApi.clearRouteLine { clearRouteLineValue ->
                     routeLineView.renderClearRouteLineValue(style, clearRouteLineValue)
                 }
-                // Also clear arrows
                 routeArrowView.render(style, routeArrowApi.clearArrows())
             }
         }
@@ -222,19 +222,20 @@ fun HomeScreen(
 
     DisposableEffect(Unit) {
         mapboxNavigation.registerLocationObserver(locationObserver)
-        mapboxNavigation.registerRouteProgressObserver(routeProgressObserver) // Register Progress
+        mapboxNavigation.registerRouteProgressObserver(routeProgressObserver)
         mapboxNavigation.startTripSession()
 
         onDispose {
             mapboxNavigation.unregisterLocationObserver(locationObserver)
-            mapboxNavigation.unregisterRouteProgressObserver(routeProgressObserver) // Unregister
+            mapboxNavigation.unregisterRouteProgressObserver(routeProgressObserver)
             mapboxNavigation.stopTripSession()
             MapboxNavigationProvider.destroy()
         }
     }
 
-    // --- UI LAYOUT ---
+    val keyboardController = LocalSoftwareKeyboardController.current // Keyboard controller to allow close it when needed
 
+    // --- UI LAYOUT ---
     Box(Modifier.fillMaxSize()) {
 
         // 1. BACKGROUND: MAP
@@ -243,9 +244,7 @@ fun HomeScreen(
             factory = { ctx ->
                 MapView(ctx).apply {
                     mapboxMap.setCamera(
-                        CameraOptions.Builder()
-                            .zoom(16.0)
-                            .build()
+                        CameraOptions.Builder().zoom(16.0).build()
                     )
 
                     location.apply {
@@ -253,120 +252,109 @@ fun HomeScreen(
                         locationPuck = createDefault2DPuck(withBearing = true)
                         enabled = true
                         puckBearingEnabled = true
-                        puckBearing = PuckBearing.COURSE // Fixes the rotation issue
+                        puckBearing = PuckBearing.COURSE
                     }
 
                     mapViewState.value = this
 
                     viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap).apply {
+                        // Tweak these for "Google Maps" style feel
                         overviewPadding = with(density) {
-                            EdgeInsets(
-                                100.dp.toPx().toDouble(),
-                                40.dp.toPx().toDouble(),
-                                100.dp.toPx().toDouble(),
-                                40.dp.toPx().toDouble()
-                            )
+                            EdgeInsets(100.dp.toPx().toDouble(), 40.dp.toPx().toDouble(), 100.dp.toPx().toDouble(), 40.dp.toPx().toDouble())
                         }
                         followingPadding = with(density) {
-                            EdgeInsets(
-                                // Use HIGH Top padding to push the puck DOWN to the bottom
-                                180.dp.toPx().toDouble(),
-                                40.dp.toPx().toDouble(),
-                                // Use LOW Bottom padding so we can see the road ahead
-                                60.dp.toPx().toDouble(),
-                                40.dp.toPx().toDouble()
-                            )
+                            EdgeInsets(180.dp.toPx().toDouble(), 40.dp.toPx().toDouble(), 60.dp.toPx().toDouble(), 40.dp.toPx().toDouble())
                         }
                     }
+                    // 45 degrees pitch is standard for navigation, 0 for overview
                     viewportDataSource?.followingPitchPropertyOverride(45.0)
-                    viewportDataSource?.followingZoomPropertyOverride(18.0)
+                    viewportDataSource?.followingZoomPropertyOverride(16.5)
 
-                    navigationCamera = NavigationCamera(mapboxMap, camera, viewportDataSource!!)
+                    val navCamera = NavigationCamera(mapboxMap, camera, viewportDataSource!!)
+                    navigationCamera = navCamera
+
+                    mapboxMap.addOnMoveListener(object : OnMoveListener {
+                        override fun onMoveBegin(detector: MoveGestureDetector) {
+                            navCamera.requestNavigationCameraToIdle()
+                        }
+                        override fun onMove(detector: MoveGestureDetector): Boolean = false
+                        override fun onMoveEnd(detector: MoveGestureDetector) {}
+                    })
                 }
             },
             update = {}
         )
 
-        // 2. OVERLAY: TOP AREA (Search or Instructions)
+        // 2. SEARCH BAR OR INSTRUCTIONS
         if (trainingState == TrainingState.IDLE) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .statusBarsPadding() // Padding for status bar
-                    .padding(top = 16.dp, start = 16.dp, end = 16.dp)
-            ) {
+            Box(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 16.dp, start = 16.dp, end = 16.dp)) {
                 SearchBar(
                     query = searchQuery,
                     onQueryChanged = { viewModel.onSearchQueryChanged(it) },
                     suggestions = searchSuggestions,
-                    onSuggestionSelected = { viewModel.onSuggestionSelected(it) },
+                    onSuggestionSelected = {
+                        keyboardController?.hide() // Hide the keyboard when a suggestion is selected
+                        viewModel.onSuggestionSelected(it) },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
         } else if ((trainingState == TrainingState.RUNNING || trainingState == TrainingState.PAUSED) && navigationRoutes.isNotEmpty()) {
-            // Show Instructions when Running AND we have a route
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .statusBarsPadding()
-            ) {
-                InstructionBanner(
-                    instruction = instructionText,
-                    distanceRemaining = distanceText,
-                )
+            Box(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding()) {
+                InstructionBanner(instruction = instructionText, distanceRemaining = distanceText)
             }
         }
 
-        // 3. OVERLAY: BOTTOM AREA (Buttons or Stats)
+        // 3. LOCATION BUTTON
+        FloatingActionButton(
+            onClick = {
+                /** Store the last location avoiding the 1s wait until the location update after the center location button is pressed.*/
+                val currentLoc = lastEnhancedLocation
+                if (currentLoc != null) {
+                    mapViewState.value?.camera?.easeTo(
+                        CameraOptions.Builder()
+                            .center(Point.fromLngLat(currentLoc.longitude, currentLoc.latitude))
+                            .build(),
+                    )
+                }
+
+                /** Using requestNavigationCameraToOverview because it use the 3d view when workout isn't on.*/
+                navigationCamera?.requestNavigationCameraToOverview()
+            },
+            /** Useful postiion in idle mode, should move up when training start to avoid being covered by the training banner */
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 70.dp, end = 16.dp)
+        ) {
+            Icon(imageVector = Icons.Default.LocationOn, contentDescription = "My Location")
+        }
+
+        // 4. BOTTOM CONTROLS
         if (trainingState == TrainingState.IDLE) {
             Column(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding() // Padding for nav bar
-                    .padding(16.dp),
+                modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (navigationRoutes.isNotEmpty()) {
                     Button(onClick = {
-                        // 1. Change State
                         viewModel.onStartTraining()
-
-                        // 2. Force Camera Update IMMEDIATELY
                         navigationCamera?.requestNavigationCameraToFollowing()
-
-                        // 3. Optional: Manually center on the last known location right now
-                        // This prevents the "waiting for next GPS signal" lag
-                        navigationLocationProvider.lastLocation?.let { loc ->
-                            viewportDataSource?.onLocationChanged(loc)
-                            viewportDataSource?.evaluate()
-                        }
-                    }) {
-                        Text("Start Navigation")
-                    }
+                    }) { Text("Start Navigation") }
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(onClick = {
                         viewModel.clearRoute()
                         viewportDataSource?.clearRouteData()
-                    }) {
-                        Text("Clear Route")
-                    }
+                    }) { Text("Clear Route") }
                 } else {
                     Button(onClick = {
                         navigationCamera?.requestNavigationCameraToFollowing()
                         viewModel.onStartTraining()
-                    }) {
-                        Text("Start Workout")
-                    }
+                    }) { Text("Start Workout") }
                 }
             }
         }
 
         if (trainingState == TrainingState.RUNNING || trainingState == TrainingState.PAUSED) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-            ) {
+            Box(modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()) {
                 TrainingOverlay(
                     trainingState = trainingState,
                     duration = liveDuration,
