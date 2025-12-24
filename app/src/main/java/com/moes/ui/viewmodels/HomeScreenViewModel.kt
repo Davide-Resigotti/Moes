@@ -91,6 +91,18 @@ class HomeScreenViewModel(
         }
     }
 
+    fun requestRouteToPoint(destination: Point) {
+        viewModelScope.launch {
+            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                location?.let {
+                    val origin = Point.fromLngLat(it.longitude, it.latitude)
+                    navigationRepository.fetchRoute(origin, destination)
+                }
+            }
+            clearSearch()
+        }
+    }
+
     private fun clearSearch() {
         _searchQuery.value = ""
         searchRepository.clear()

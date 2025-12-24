@@ -37,22 +37,24 @@ class LiveTrainingService : Service() {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 locationResult.lastLocation?.let { location ->
-                    val coordinate = Coordinate(location.latitude, location.longitude)
+                    if (location.speed > 0.5f) {
+                        val coordinate = Coordinate(location.latitude, location.longitude)
 
-                    // --- IMMUTABLE UPDATE --- //
-                    liveTrainingSession = liveTrainingSession?.let { session ->
-                        val currentSegment = session.segments.lastOrNull()
-                        if (currentSegment != null) {
-                            val updatedSegment = currentSegment.copy(
-                                coordinates = currentSegment.coordinates + coordinate
-                            )
-                            val updatedSegments = session.segments.dropLast(1) + updatedSegment
-                            session.copy(segments = updatedSegments)
-                        } else {
-                            session // Should not happen if tracking
+                        // --- IMMUTABLE UPDATE --- //
+                        liveTrainingSession = liveTrainingSession?.let { session ->
+                            val currentSegment = session.segments.lastOrNull()
+                            if (currentSegment != null) {
+                                val updatedSegment = currentSegment.copy(
+                                    coordinates = currentSegment.coordinates + coordinate
+                                )
+                                val updatedSegments = session.segments.dropLast(1) + updatedSegment
+                                session.copy(segments = updatedSegments)
+                            } else {
+                                session // Should not happen if tracking
+                            }
                         }
+                        updateLiveData()
                     }
-                    updateLiveData()
                 }
             }
         }
