@@ -2,89 +2,107 @@ package com.moes.ui.composables
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.unit.dp
 import com.mapbox.search.result.SearchSuggestion
 import kotlinx.coroutines.delay
 
-/**
- * A reusable, "dumb" composable that provides a search bar UI.
- * It does not know about any ViewModel. It only receives state and exposes events.
- * It includes a debounce mechanism to delay search queries.
- */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchBar(
     query: String,
     onQueryChanged: (String) -> Unit,
     suggestions: List<SearchSuggestion>,
-    onSuggestionSelected: (SearchSuggestion) -> Unit
+    onSuggestionSelected: (SearchSuggestion) -> Unit,
+    modifier: Modifier
 ) {
-    // This internal state holds the text field's value and updates immediately as the user types.
     var internalQuery by remember { mutableStateOf(query) }
 
-    // When the external query changes (e.g., cleared by the ViewModel after a selection),
-    // we update our internal state to match.
     LaunchedEffect(query) {
         if (internalQuery != query) {
             internalQuery = query
         }
     }
 
-    // This effect listens for changes in the internal state.
-    // When the user stops typing for 300ms, it calls the onQueryChanged event
-    // to trigger the actual search. This is called "debouncing".
     LaunchedEffect(internalQuery) {
         if (internalQuery != query) {
-            delay(300L) // Wait for 300ms of inactivity
+            delay(300L) // Debounce
             onQueryChanged(internalQuery)
         }
     }
 
-    Column {
-        OutlinedTextField(
-            value = internalQuery,
-            // Update the internal state on every character change.
-            onValueChange = { internalQuery = it },
-            label = { Text("Search") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)
-        )
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        shadowElevation = 4.dp,
+        modifier = modifier
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search Icon",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                TextField(
+                    value = internalQuery,
+                    onValueChange = { internalQuery = it },
+                    placeholder = { Text("Search for a destination...") },
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
+                    ),
+                )
+            }
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-        ) {
-            items(suggestions) { suggestion ->
-                var suggestionName = suggestion.name;
-
-                if (suggestion.address?.street != null) {
-                    suggestionName += ", " + suggestion.address?.street;
-                }
-                if (suggestion.address?.place != null) {
-                    suggestionName += ", " + suggestion.address?.place;
-                }
-
-                Text(
-                    text = suggestionName,
+            if (suggestions.isNotEmpty()) {
+                LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onSuggestionSelected(suggestion) }
-                        .padding(vertical = 12.dp)
-                )
+                        .padding(horizontal = 8.dp)
+                ) {
+                    items(suggestions) { suggestion ->
+                        Text(
+                            text = suggestion.name,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onSuggestionSelected(suggestion) }
+                                .padding(vertical = 12.dp, horizontal = 8.dp)
+                        )
+                    }
+                }
             }
         }
     }
