@@ -16,7 +16,6 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -24,7 +23,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.moes.data.TrainingState
 import java.util.concurrent.TimeUnit
@@ -39,53 +37,46 @@ fun TrainingOverlay(
     onResumeClick: () -> Unit,
     onStopClick: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(bottom = 32.dp, start = 16.dp, end = 16.dp),
-        contentAlignment = Alignment.BottomCenter
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        shadowElevation = 4.dp,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
     ) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            shadowElevation = 4.dp
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Stats Row
-                Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
-                    StatItem(label = "Duration", value = formatDuration(duration))
-                    StatItem(
-                        label = "Distance (km)",
-                        value = String.format("%.2f", distance / 1000)
-                    )
+            // Stats Row
+            Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+                StatItem(label = "Duration", value = formatDuration(duration))
+                StatItem(
+                    label = "Distance (km)",
+                    value = String.format("%.2f", distance / 1000)
+                )
+            }
+
+            // Buttons Row
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Button(
+                    onClick = onStopClick,
+                ) {
+                    Icon(Icons.Default.Clear, contentDescription = "Stop Training")
+                    Text("Stop")
                 }
 
-                // Buttons Row
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Button(
-                        onClick = onStopClick,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                    ) {
-                        Icon(Icons.Default.Clear, contentDescription = "Stop Training")
-                        Text("Stop")
+                Spacer(modifier = Modifier.width(16.dp))
+
+                if (trainingState == TrainingState.RUNNING) {
+                    Button(onClick = onPauseClick) {
+                        Icon(Icons.Default.Face, contentDescription = "Pause Training")
+                        Text("Pause")
                     }
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    if (trainingState == TrainingState.RUNNING) {
-                        Button(onClick = onPauseClick) {
-                            Icon(Icons.Default.Face, contentDescription = "Pause Training")
-                            Text("Pause")
-                        }
-                    } else if (trainingState == TrainingState.PAUSED) {
-                        Button(onClick = onResumeClick) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = "Resume Training")
-                            Text("Resume")
-                        }
+                } else if (trainingState == TrainingState.PAUSED) {
+                    Button(onClick = onResumeClick) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = "Resume Training")
+                        Text("Resume")
                     }
                 }
             }
