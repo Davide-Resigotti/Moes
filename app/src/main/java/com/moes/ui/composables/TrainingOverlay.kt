@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.moes.data.TrainingState
 import java.util.concurrent.TimeUnit
@@ -107,15 +108,16 @@ private fun StatItem(label: String, value: String, isLarge: Boolean) {
         Text(
             text = value,
             style = if (isLarge) {
-                MaterialTheme.typography.displayMedium // Pace grande
+                MaterialTheme.typography.displayMedium
             } else {
-                MaterialTheme.typography.headlineMedium // Time e Distance piccoli
-            }
+                MaterialTheme.typography.headlineMedium
+            },
+            color = Color.White
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            color = Color.White.copy(alpha = 0.7f)
         )
     }
 }
