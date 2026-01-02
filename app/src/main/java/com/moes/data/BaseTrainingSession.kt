@@ -17,4 +17,17 @@ interface BaseTrainingSession<T : BaseTrainingSegment> {
         if (segments.isEmpty()) return 0L
         return segments.last().endTime!! - segments.first().startTime
     }
+
+    fun pace(): String {
+        val distance = totalDistance()
+        if (distance == 0.0) return "0:00"
+
+        val durationInSeconds = activeDuration() / 1000.0
+        val paceInSecondsPerKm = durationInSeconds / (distance / 1000.0)
+
+        val minutes = (paceInSecondsPerKm / 60).toInt()
+        val seconds = (paceInSecondsPerKm % 60).toInt()
+
+        return String.format("%d:%02d", minutes, seconds)
+    }
 }
