@@ -129,6 +129,18 @@ fun HomeScreen(
         value = liveTrainingSession?.activeDuration() ?: 0L
     }
 
+    val livePace by produceState(
+        initialValue = "0:00",
+        key1 = liveTrainingSession,
+        key2 = trainingState
+    ) {
+        while (trainingState == TrainingState.RUNNING) {
+            value = liveTrainingSession?.pace() ?: "0:00"
+            delay(500)
+        }
+        value = liveTrainingSession?.pace() ?: "0:00"
+    }
+
     val context = LocalContext.current
     val density = LocalDensity.current
 
@@ -435,6 +447,7 @@ fun HomeScreen(
                     trainingState = trainingState,
                     duration = liveDuration,
                     distance = liveTrainingSession?.totalDistance() ?: 0.0,
+                    pace = livePace,
                     onPauseClick = { viewModel.onPauseTraining() },
                     onResumeClick = { viewModel.onResumeTraining() },
                     onStopClick = {
