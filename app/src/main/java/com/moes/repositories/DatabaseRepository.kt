@@ -10,4 +10,5 @@ interface DatabaseRepository {
      * Saves a completed training session to the database.
      */
     suspend fun saveTrainingSession(session: TrainingSession)
+    
 }
