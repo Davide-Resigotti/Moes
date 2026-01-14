@@ -1,15 +1,45 @@
 package com.moes.data.live
 
-import com.moes.data.BaseTrainingSession
+import android.annotation.SuppressLint
+import com.moes.data.TrainingSession
+import com.moes.utils.PolylineUtils
 
 data class LiveTrainingSession(
     val id: String,
-    override val segments: List<LiveTrainingSegment> = emptyList()
-) : BaseTrainingSession<LiveTrainingSegment>
+    val startTime: Long,
+    val endTime: Long? = null,
+    val segments: List<LiveTrainingSegment> = emptyList()
+) {
+    fun activeDuration(): Long = segments.sumOf { it.duration() }
+    fun totalDistance(): Double = segments.sumOf { it.distance() }
 
-fun LiveTrainingSession.toTrainingSession(): com.moes.data.TrainingSession {
-    return com.moes.data.TrainingSession(
+    @SuppressLint("DefaultLocale")
+    fun pace(): String {
+        val dist = totalDistance()
+        if (dist == 0.0) return "0:00"
+        val secondsPerKm = (activeDuration() / 1000.0) / (dist / 1000.0)
+        val min = (secondsPerKm / 60).toInt()
+        val sec = (secondsPerKm % 60).toInt()
+        return String.format("%d:%02d", min, sec)
+    }
+}
+
+fun LiveTrainingSession.toTrainingSession(userId: String): TrainingSession {
+    // 1. Appiattisci le coordinate ignorando le pause
+    val allCoordinates = this.segments.flatMap { it.coordinates }
+
+    // 2. Comprimi la rotta
+    val encodedGeometry = PolylineUtils.encode(allCoordinates)
+
+    // 3. Ritorna l'oggetto pronto per il salvataggio
+    return TrainingSession(
         id = this.id,
-        segments = this.segments.map { it.toTrainingSegment() }
+        userId = userId,
+        startTime = this.startTime,
+        endTime = this.endTime ?: System.currentTimeMillis(),
+        durationMs = this.activeDuration(),
+        distanceMeters = this.totalDistance(),
+        routeGeometry = encodedGeometry,
+        isSynced = false
     )
 }

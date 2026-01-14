@@ -3,8 +3,8 @@ package com.moes.ui.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -21,7 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.moes.routes.Routes
-import com.moes.ui.screens.AccountScreen
+import com.moes.ui.screens.AuthScreen
 import com.moes.ui.screens.HomeScreen
 import com.moes.ui.screens.SessionsScreen
 
@@ -74,7 +74,7 @@ fun MoesNavHost() {
                 HomeScreen()
             }
             composable(Routes.ACCOUNT) {
-                AccountScreen()
+                AuthScreen()
             }
             composable(Routes.SESSIONS) {
                 SessionsScreen()
