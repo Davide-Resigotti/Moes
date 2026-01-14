@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import com.moes.data.TrainingState
 import com.moes.data.live.LiveTrainingSession
+import com.moes.data.live.toTrainingSession
 import com.moes.services.LiveTrainingService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 class TrainingRepository(
     context: Context,
     private val databaseRepository: DatabaseRepository,
+    private val authRepository: AuthRepository,
     externalScope: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
 
@@ -41,8 +43,10 @@ class TrainingRepository(
 
     init {
         externalScope.launch {
-            LiveTrainingService.completedTrainingSession.collect { session ->
-                session?.let { databaseRepository.saveTrainingSession(it) }
+            LiveTrainingService.completedTrainingSession.collect { liveSession ->
+                liveSession?.let { session ->
+                    saveFinishedSession(session)
+                }
             }
         }
     }
@@ -74,4 +78,16 @@ class TrainingRepository(
         }
         appContext.startService(intent)
     }
+
+    private suspend fun saveFinishedSession(liveSession: LiveTrainingSession) {
+        // 1. Recupera l'ID in modo sicuro (o reale o "moes_guest_user")
+        val userId = authRepository.currentUserIdSafe
+
+        // 2. Crea l'oggetto sessione intestato a quell'ID
+        val session = liveSession.toTrainingSession(userId)
+
+        // 3. Salva nel DB
+        databaseRepository.saveTrainingSession(session)
+    }
 }
+
