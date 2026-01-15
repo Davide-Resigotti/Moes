@@ -94,13 +94,15 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalPreviewMapboxNavigationAPI::class)
 @Composable
 fun HomeScreen(
-    viewModel: HomeScreenViewModel = viewModel(factory = ViewModelFactory(LocalContext.current))
+    viewModel: HomeScreenViewModel = viewModel(factory = ViewModelFactory(LocalContext.current)),
+    onNavigateToSummary: (String) -> Unit
 ) {
     val navigationRoutes by viewModel.navigationRoutes.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val searchSuggestions by viewModel.searchSuggestions.collectAsState()
     val trainingState by viewModel.trainingState.collectAsState()
     val liveTrainingSession by viewModel.liveTrainingSession.collectAsState()
+    val finishedSessionId by viewModel.finishedSessionId.collectAsState()
 
     // --- UI STATE FOR INSTRUCTIONS ---
     var instructionText by remember { mutableStateOf("") }
@@ -231,6 +233,13 @@ fun HomeScreen(
     }
 
     // --- SIDE EFFECTS ---
+    LaunchedEffect(finishedSessionId) {
+        finishedSessionId?.let { id ->
+            onNavigateToSummary(id)
+            viewModel.clearFinishedSessionEvent() // Resetta per evitare loop
+        }
+    }
+
     LaunchedEffect(navigationRoutes) {
         if (navigationRoutes.isNotEmpty()) {
             mapboxNavigation.setNavigationRoutes(navigationRoutes)
@@ -267,7 +276,8 @@ fun HomeScreen(
         }
     }
 
-    val keyboardController = LocalSoftwareKeyboardController.current // Keyboard controller to allow close it when needed
+    val keyboardController =
+        LocalSoftwareKeyboardController.current // Keyboard controller to allow close it when needed
 
     // --- UI LAYOUT ---
     Box(Modifier.fillMaxSize()) {
@@ -295,10 +305,20 @@ fun HomeScreen(
                     viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap).apply {
                         // Tweak these for "Google Maps" style feel
                         overviewPadding = with(density) {
-                            EdgeInsets(100.dp.toPx().toDouble(), 40.dp.toPx().toDouble(), 100.dp.toPx().toDouble(), 40.dp.toPx().toDouble())
+                            EdgeInsets(
+                                100.dp.toPx().toDouble(),
+                                40.dp.toPx().toDouble(),
+                                100.dp.toPx().toDouble(),
+                                40.dp.toPx().toDouble()
+                            )
                         }
                         followingPadding = with(density) {
-                            EdgeInsets(180.dp.toPx().toDouble(), 40.dp.toPx().toDouble(), 180.dp.toPx().toDouble(), 40.dp.toPx().toDouble())
+                            EdgeInsets(
+                                180.dp.toPx().toDouble(),
+                                40.dp.toPx().toDouble(),
+                                180.dp.toPx().toDouble(),
+                                40.dp.toPx().toDouble()
+                            )
                         }
                     }
                     // 45 degrees pitch is standard for navigation, 0 for overview
@@ -316,12 +336,13 @@ fun HomeScreen(
 
                             // Drop a marker at the clicked point
                             circleAnnotationManager?.deleteAll()
-                            val circleAnnotationOptions: CircleAnnotationOptions = CircleAnnotationOptions()
-                                .withPoint(point)
-                                .withCircleRadius(8.0)
-                                .withCircleColor("#ee4e8b")
-                                .withCircleStrokeWidth(2.0)
-                                .withCircleStrokeColor("#ffffff")
+                            val circleAnnotationOptions: CircleAnnotationOptions =
+                                CircleAnnotationOptions()
+                                    .withPoint(point)
+                                    .withCircleRadius(8.0)
+                                    .withCircleColor("#ee4e8b")
+                                    .withCircleStrokeWidth(2.0)
+                                    .withCircleStrokeColor("#ffffff")
                             circleAnnotationManager?.create(circleAnnotationOptions)
                         }
                         true
@@ -456,14 +477,15 @@ fun HomeScreen(
         }
 
         if (showMapClickDialog) {
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectTapGestures(onTap = {
-                        showMapClickDialog = false
-                        circleAnnotationManager?.deleteAll()
-                    })
-                }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTapGestures(onTap = {
+                            showMapClickDialog = false
+                            circleAnnotationManager?.deleteAll()
+                        })
+                    }
             )
 
             clickedScreenCoordinate?.let {

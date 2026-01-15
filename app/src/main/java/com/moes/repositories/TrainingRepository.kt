@@ -8,6 +8,7 @@ import com.moes.data.live.toTrainingSession
 import com.moes.services.LiveTrainingService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -40,6 +41,9 @@ class TrainingRepository(
     val liveTrainingSession: StateFlow<LiveTrainingSession?> =
         LiveTrainingService.liveTrainingSession
             .stateIn(externalScope, SharingStarted.WhileSubscribed(5000), null)
+
+    private val _finishedSessionId = MutableStateFlow<String?>(null)
+    val finishedSessionId: StateFlow<String?> = _finishedSessionId
 
     init {
         externalScope.launch {
@@ -79,15 +83,28 @@ class TrainingRepository(
         appContext.startService(intent)
     }
 
+
     private suspend fun saveFinishedSession(liveSession: LiveTrainingSession) {
-        // 1. Recupera l'ID in modo sicuro (o reale o "moes_guest_user")
         val userId = authRepository.currentUserIdSafe
 
-        // 2. Crea l'oggetto sessione intestato a quell'ID
-        val session = liveSession.toTrainingSession(userId)
+        // Assegniamo un nome di default basato sull'ora (o generico)
+        val defaultTitle = "Corsa ${
+            java.text.SimpleDateFormat("dd/MM HH:mm").format(java.util.Date(liveSession.startTime))
+        }"
 
-        // 3. Salva nel DB
+        // Mapperemo includendo il titolo (devi aggiornare il mapper in LiveTrainingSession.kt o passare il titolo qui)
+        // Per semplicità, assumiamo che il mapper ora accetti il titolo o lo mettiamo di default nel costruttore Entity
+        val session = liveSession.toTrainingSession(userId).copy(title = defaultTitle)
+
         databaseRepository.saveTrainingSession(session)
+
+        // Notifichiamo la UI che abbiamo salvato questo ID
+        _finishedSessionId.value = session.id
+    }
+
+    // Metodo per resettare l'evento di navigazione
+    fun clearFinishedSessionEvent() {
+        _finishedSessionId.value = null
     }
 }
 

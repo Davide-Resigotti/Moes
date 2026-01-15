@@ -8,14 +8,13 @@ class FirestoreDataSource {
     private val db = FirebaseFirestore.getInstance()
 
     suspend fun saveSession(session: TrainingSession) {
-        // MODIFICA QUI: Creiamo una copia con isSynced = true apposta per il cloud
         val sessionToUpload = session.copy(isSynced = true)
 
         db.collection("users")
-            .document(session.userId) // o sessionToUpload.userId, è uguale
+            .document(session.userId)
             .collection("sessions")
             .document(session.id)
-            .set(sessionToUpload) // Inviamo l'oggetto "pulito"
+            .set(sessionToUpload)
             .await()
     }
 
@@ -28,10 +27,14 @@ class FirestoreDataSource {
 
         return snapshot.documents.mapNotNull { doc ->
             try {
-                // Mappatura manuale per sicurezza
+                // Mappatura manuale aggiornata con TITLE
                 TrainingSession(
                     id = doc.getString("id") ?: "",
                     userId = doc.getString("userId") ?: userId,
+
+                    // MODIFICA QUI: Recupera il titolo o usa un default per i vecchi dati
+                    title = doc.getString("title") ?: "Allenamento Recuperato",
+
                     startTime = doc.getLong("startTime") ?: 0L,
                     endTime = doc.getLong("endTime") ?: 0L,
                     durationMs = doc.getLong("durationMs") ?: 0L,
@@ -44,5 +47,14 @@ class FirestoreDataSource {
                 null
             }
         }
+    }
+
+    suspend fun deleteSession(userId: String, sessionId: String) {
+        db.collection("users")
+            .document(userId)
+            .collection("sessions")
+            .document(sessionId)
+            .delete()
+            .await()
     }
 }
