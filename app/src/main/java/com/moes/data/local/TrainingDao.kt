@@ -28,4 +28,13 @@ interface TrainingDao {
     // MODIFICA 2: Migrazione specifica solo per "moes_guest_user"
     @Query("UPDATE training_sessions SET userId = :realUserId, isSynced = 0 WHERE userId = 'moes_guest_user'")
     suspend fun migrateGuestSessionsToUser(realUserId: String)
+
+    @Query("SELECT * FROM training_sessions WHERE id = :id")
+    suspend fun getSessionById(id: String): TrainingSession?
+
+    @Query("DELETE FROM training_sessions WHERE id = :id")
+    suspend fun deleteSessionById(id: String)
+
+    @Query("UPDATE training_sessions SET title = :title, isSynced = 0 WHERE id = :id")
+    suspend fun updateSessionTitle(id: String, title: String)
 }

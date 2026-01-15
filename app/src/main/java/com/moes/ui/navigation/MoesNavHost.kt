@@ -16,13 +16,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.moes.routes.Routes
 import com.moes.ui.screens.AuthScreen
 import com.moes.ui.screens.HomeScreen
+import com.moes.ui.screens.SessionDetailScreen
 import com.moes.ui.screens.SessionsScreen
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
@@ -71,13 +74,44 @@ fun MoesNavHost() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Routes.HOME) {
-                HomeScreen()
+                // COLLEGAMENTO 1: Quando finisce l'allenamento, vai ai dettagli in modalità POST-WORKOUT (true)
+                HomeScreen(
+                    onNavigateToSummary = { sessionId ->
+                        navController.navigate(
+                            Routes.sessionDetail(sessionId, isPostWorkout = true)
+                        )
+                    }
+                )
             }
             composable(Routes.ACCOUNT) {
                 AuthScreen()
             }
             composable(Routes.SESSIONS) {
-                SessionsScreen()
+                // COLLEGAMENTO 2: Quando clicchi una card, vai ai dettagli in modalità LETTURA (false)
+                SessionsScreen(
+                    onSessionClick = { sessionId ->
+                        navController.navigate(
+                            Routes.sessionDetail(sessionId, isPostWorkout = false)
+                        )
+                    }
+                )
+            }
+            composable(
+                route = Routes.SESSION_DETAIL,
+                arguments = listOf(
+                    navArgument("sessionId") { type = NavType.StringType },
+                    navArgument("isPostWorkout") { type = NavType.BoolType; defaultValue = false }
+                )
+            ) { backStackEntry ->
+                val sessionId =
+                    backStackEntry.arguments?.getString("sessionId") ?: return@composable
+                val isPostWorkout = backStackEntry.arguments?.getBoolean("isPostWorkout") ?: false
+
+                SessionDetailScreen(
+                    sessionId = sessionId,
+                    isPostWorkout = isPostWorkout,
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
         }
     }

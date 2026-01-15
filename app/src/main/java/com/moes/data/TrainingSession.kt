@@ -9,6 +9,7 @@ data class TrainingSession(
     val userId: String,
 
     // Dati statistici
+    val title: String = "Allenamento",
     val startTime: Long,
     val endTime: Long,
     val durationMs: Long,

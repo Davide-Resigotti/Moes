@@ -46,6 +46,8 @@ class HomeScreenViewModel(
     // The UI will observe this to draw the route and show the "Start Training" button.
     val navigationRoutes = navigationRepository.navigationRoutes
 
+    val finishedSessionId = trainingRepository.finishedSessionId
+
     // --- Actions --- //
 
     fun onSearchQueryChanged(query: String) {
@@ -131,5 +133,9 @@ class HomeScreenViewModel(
     fun clearRoute() {
         navigationRepository.clearRoute()
         clearSearch()
+    }
+
+    fun clearFinishedSessionEvent() {
+        trainingRepository.clearFinishedSessionEvent()
     }
 }

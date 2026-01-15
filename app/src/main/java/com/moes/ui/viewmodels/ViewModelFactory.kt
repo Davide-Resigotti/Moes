@@ -56,6 +56,10 @@ class ViewModelFactory(private val context: Context) : ViewModelProvider.Factory
             return SessionsViewModel( authRepository, databaseRepository) as T
         }
 
+        if (modelClass.isAssignableFrom(SessionDetailViewModel::class.java)) {
+            return SessionDetailViewModel(databaseRepository) as T
+        }
+
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }
