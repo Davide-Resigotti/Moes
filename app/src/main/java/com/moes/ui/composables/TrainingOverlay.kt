@@ -1,5 +1,6 @@
 package com.moes.ui.composables
 
+import android.R
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.mapbox.maps.extension.style.expressions.dsl.generated.color
 import com.moes.data.TrainingState
 import java.util.concurrent.TimeUnit
 
@@ -112,7 +114,7 @@ private fun StatItem(label: String, value: String, isLarge: Boolean) {
             } else {
                 MaterialTheme.typography.headlineMedium
             },
-            color = Color.White
+            color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = label,
