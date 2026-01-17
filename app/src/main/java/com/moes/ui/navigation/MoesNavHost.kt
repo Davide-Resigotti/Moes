@@ -1,19 +1,48 @@
 package com.moes.ui.navigation
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -44,70 +73,33 @@ fun MoesNavHost() {
         Screen.Account,
     )
 
-    Scaffold(
-        bottomBar = {
-            NavigationBar {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentDestination = navBackStackEntry?.destination
-                items.forEach { screen ->
-                    // MODIFICA QUI: Logica "intelligente" per la selezione
-                    val isSelected = if (screen == Screen.Sessions) {
-                        // Se siamo sulla tab Sessions, controlliamo se la rotta corrente è
-                        // Sessions OPPURE SessionDetail
-                        currentDestination?.hierarchy?.any { dest ->
-                            dest.route == Routes.SESSIONS ||
-                                    dest.route == Routes.SESSION_DETAIL // Usa la costante definita in Routes.kt
-                        } == true
-                    } else {
-                        // Comportamento standard per Home e Account
-                        currentDestination?.hierarchy?.any { it.route == screen.route } == true
-                    }
+    // --- CONFIGURAZIONE NAVBAR ---
+    val navBarHeight = 64.dp // Più bassa (era 80dp)
+    val navBarBottomMargin = 24.dp
+    val navBarHorizontalMargin = 24.dp
+    val navBarShape = CircleShape // A PILLOLA (Completamente rotonda)
 
-                    NavigationBarItem(
-                        icon = { Icon(screen.icon, contentDescription = screen.title) },
-                        label = { Text(screen.title) },
-                        selected = isSelected, // Usa la nostra variabile calcolata
-                        onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
-                    )
-                }
-            }
-        }
-    ) { innerPadding ->
+    Box(modifier = Modifier.fillMaxSize()) {
+
+        // 1. CONTENT
         NavHost(
             navController = navController,
             startDestination = Routes.HOME,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.fillMaxSize()
         ) {
             composable(Routes.HOME) {
                 HomeScreen(
                     onNavigateToSummary = { sessionId ->
-                        // 1. Vai alla lista sessioni (resetta stack)
                         navController.navigate(Routes.SESSIONS) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                             launchSingleTop = true
                             restoreState = true
                         }
-
-                        // 2. Apri il dettaglio
                         navController.navigate(Routes.sessionDetail(sessionId))
                     }
                 )
             }
-
-            composable(Routes.ACCOUNT) {
-                AuthScreen()
-            }
-
+            composable(Routes.ACCOUNT) { AuthScreen() }
             composable(Routes.SESSIONS) {
                 SessionsScreen(
                     onSessionClick = { sessionId ->
@@ -115,19 +107,131 @@ fun MoesNavHost() {
                     }
                 )
             }
-
             composable(
                 route = Routes.SESSION_DETAIL,
-                arguments = listOf(
-                    navArgument("sessionId") { type = NavType.StringType }
-                )
+                arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
             ) { backStackEntry ->
                 val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
-
                 SessionDetailScreen(
                     sessionId = sessionId,
                     onNavigateBack = { navController.popBackStack() }
                 )
+            }
+        }
+
+        // 2. NAVBAR FLUTTUANTE
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(
+                    start = navBarHorizontalMargin,
+                    end = navBarHorizontalMargin,
+                    bottom = navBarBottomMargin
+                )
+                .shadow(12.dp, shape = navBarShape)
+                .clip(navBarShape)
+                .background(MaterialTheme.colorScheme.surface)
+                .height(navBarHeight)
+        ) {
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val currentDestination = navBackStackEntry?.destination
+
+            val selectedIndex by remember(currentDestination) {
+                derivedStateOf {
+                    var index = 0
+                    items.forEachIndexed { i, screen ->
+                        val isSelected = if (screen == Screen.Sessions) {
+                            currentDestination?.hierarchy?.any {
+                                it.route == Routes.SESSIONS || it.route == Routes.SESSION_DETAIL
+                            } == true
+                        } else {
+                            currentDestination?.hierarchy?.any { it.route == screen.route } == true
+                        }
+                        if (isSelected) index = i
+                    }
+                    index
+                }
+            }
+
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val totalWidth = maxWidth
+                val itemWidth = totalWidth / items.size
+
+                // ANIMAZIONE SLIDER (BOLLA)
+                val indicatorOffset by animateDpAsState(
+                    targetValue = itemWidth * selectedIndex,
+                    animationSpec = spring(stiffness = Spring.StiffnessLow, dampingRatio = 0.7f),
+                    label = "indicatorOffset"
+                )
+
+                // LA BOLLA (Sfondo grigio che si muove)
+                Box(
+                    modifier = Modifier
+                        .offset(x = indicatorOffset)
+                        .width(itemWidth)
+                        .fillMaxHeight()
+                        // Padding ridotto perché la bar è più bassa
+                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape) // Bolla interna a pillola
+                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f))
+                    )
+                }
+
+                // ICONE + TESTO
+                Row(modifier = Modifier.fillMaxSize()) {
+                    items.forEachIndexed { index, screen ->
+                        val isSelected = index == selectedIndex
+
+                        val contentColor by animateColorAsState(
+                            targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            animationSpec = tween(300),
+                            label = "contentColor"
+                        )
+
+                        val interactionSource = remember { MutableInteractionSource() }
+
+                        Column(
+                            modifier = Modifier
+                                .width(itemWidth)
+                                .fillMaxHeight()
+                                .clickable(interactionSource = interactionSource, indication = null) {
+                                    navController.navigate(screen.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                },
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = screen.icon,
+                                contentDescription = screen.title,
+                                tint = contentColor,
+                                modifier = Modifier.height(24.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(2.dp))
+
+                            Text(
+                                text = screen.title,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 10.sp, // Font leggermente più piccolo per la bar bassa
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                ),
+                                color = contentColor,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
             }
         }
     }

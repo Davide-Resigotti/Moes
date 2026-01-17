@@ -2,8 +2,9 @@ package com.moes.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Primary App Color
-val Orange = Color(0xFFF59B23)
+// Primary App Color (Estratto dal Logo)
+val Orange = Color(0xFFFFA000) // Un arancione leggermente più acceso/ambra
+val OrangeLight = Color(0xFFFFD180) // Per sfondi o selezioni
 
 // Dark Theme Palette
 val DarkGray = Color(0xFF121212)      // Background

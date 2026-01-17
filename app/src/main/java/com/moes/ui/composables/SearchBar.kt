@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
@@ -28,7 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import com.mapbox.search.result.SearchSuggestion
@@ -47,42 +47,42 @@ fun SearchBar(
     val focusManager = LocalFocusManager.current
 
     LaunchedEffect(query) {
-        if (internalQuery != query) {
-            internalQuery = query
-        }
-        if (query.isEmpty()) {
-            focusManager.clearFocus()
-        }
+        if (internalQuery != query) internalQuery = query
+        if (query.isEmpty()) focusManager.clearFocus()
     }
 
     LaunchedEffect(internalQuery) {
         if (internalQuery != query) {
-            delay(300L) // Debounce
+            delay(300L)
             onQueryChanged(internalQuery)
         }
     }
 
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        shadowElevation = 4.dp,
-        modifier = modifier
-    ) {
-        Column {
+    Column(modifier = modifier) {
+        // BARRA DI RICERCA A PILLOLA
+        Surface(
+            shape = CircleShape, // Completamente rotonda
+            shadowElevation = 8.dp,
+            color = MaterialTheme.colorScheme.surface,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Row(
-                modifier = Modifier.padding(horizontal = 16.dp),
+                modifier = Modifier.padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Icona Lente a Sinistra
                 Icon(
                     imageVector = Icons.Default.Search,
-                    contentDescription = "Search Icon",
-                    tint = MaterialTheme.colorScheme.primary
+                    contentDescription = "Search",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 12.dp)
                 )
+
                 TextField(
                     value = internalQuery,
                     onValueChange = { internalQuery = it },
-                    placeholder = { Text("Search ...") },
-                    modifier = Modifier
-                        .fillMaxWidth(),
+                    placeholder = { Text("Dove vuoi andare?", style = MaterialTheme.typography.bodyMedium) },
+                    modifier = Modifier.weight(1f),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
@@ -91,24 +91,32 @@ fun SearchBar(
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent,
                     ),
-                    trailingIcon = {
-                        if (internalQuery.isNotEmpty()) {
-                            IconButton(onClick = { internalQuery = "" }) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = "Clear search"
-                                )
-                            }
-                        }
-                    }
+                    singleLine = true
                 )
-            }
 
-            if (suggestions.isNotEmpty()) {
+                if (internalQuery.isNotEmpty()) {
+                    IconButton(onClick = { internalQuery = "" }) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = "Clear",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+
+        // SUGGERIMENTI
+        if (suggestions.isNotEmpty()) {
+            Surface(
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp), // Suggerimenti un po' meno rotondi della barra
+                shadowElevation = 4.dp
+            ) {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
+                    modifier = Modifier.padding(vertical = 8.dp)
                 ) {
                     items(suggestions) { suggestion ->
                         Text(
@@ -119,7 +127,7 @@ fun SearchBar(
                                     focusManager.clearFocus()
                                     onSuggestionSelected(suggestion)
                                 }
-                                .padding(vertical = 12.dp, horizontal = 8.dp)
+                                .padding(vertical = 12.dp, horizontal = 20.dp)
                         )
                     }
                 }
