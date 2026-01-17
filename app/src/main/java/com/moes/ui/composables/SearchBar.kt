@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -30,6 +31,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mapbox.search.result.SearchSuggestion
 import kotlinx.coroutines.delay
@@ -61,7 +64,7 @@ fun SearchBar(
     Column(modifier = modifier) {
         // BARRA DI RICERCA A PILLOLA
         Surface(
-            shape = CircleShape, // Completamente rotonda
+            shape = CircleShape,
             shadowElevation = 8.dp,
             color = MaterialTheme.colorScheme.surface,
             modifier = Modifier.fillMaxWidth()
@@ -70,7 +73,6 @@ fun SearchBar(
                 modifier = Modifier.padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Icona Lente a Sinistra
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = "Search",
@@ -81,7 +83,12 @@ fun SearchBar(
                 TextField(
                     value = internalQuery,
                     onValueChange = { internalQuery = it },
-                    placeholder = { Text("Dove vuoi andare?", style = MaterialTheme.typography.bodyMedium) },
+                    placeholder = {
+                        Text(
+                            "Dove vuoi andare?",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
                     modifier = Modifier.weight(1f),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
@@ -106,29 +113,63 @@ fun SearchBar(
             }
         }
 
-        // SUGGERIMENTI
+        // SUGGERIMENTI MIGLIORATI
         if (suggestions.isNotEmpty()) {
             Surface(
                 modifier = Modifier
                     .padding(top = 8.dp)
                     .fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp), // Suggerimenti un po' meno rotondi della barra
+                shape = RoundedCornerShape(24.dp),
                 shadowElevation = 4.dp
             ) {
                 LazyColumn(
                     modifier = Modifier.padding(vertical = 8.dp)
                 ) {
                     items(suggestions) { suggestion ->
-                        Text(
-                            text = suggestion.name,
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
                                     focusManager.clearFocus()
                                     onSuggestionSelected(suggestion)
                                 }
-                                .padding(vertical = 12.dp, horizontal = 20.dp)
-                        )
+                                .padding(vertical = 12.dp, horizontal = 20.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Icona Pin piccola per ogni risultato
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(end = 16.dp)
+                            )
+
+                            // Testo su due righe: Nome e Indirizzo
+                            Column {
+                                // 1. NOME (es. Via Roma)
+                                Text(
+                                    text = suggestion.name,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+
+                                // 2. INDIRIZZO COMPLETO (es. Milano, MI, Italia)
+                                // Mapbox fornisce l'indirizzo formattato o la descrizione
+                                val addressText = suggestion.address?.formattedAddress()
+                                    ?: suggestion.descriptionText
+                                if (!addressText.isNullOrBlank()) {
+                                    Text(
+                                        text = addressText,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
