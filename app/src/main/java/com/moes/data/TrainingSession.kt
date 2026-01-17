@@ -8,16 +8,28 @@ data class TrainingSession(
     @PrimaryKey val id: String,
     val userId: String,
 
-    // Dati statistici
     val title: String = "Allenamento",
     val startTime: Long,
     val endTime: Long,
     val durationMs: Long,
     val distanceMeters: Double,
 
-    // La rotta compressa
     val routeGeometry: String,
-
-    // Sync
     val isSynced: Boolean = false
-)
+) {
+    val avgPaceSeconds: Double
+        get() {
+            if (distanceMeters <= 0.0) return 0.0
+            val durationSec = durationMs / 1000.0
+            val distanceKm = distanceMeters / 1000.0
+            return durationSec / distanceKm
+        }
+
+    val avgSpeedKmh: Double
+        get() {
+            if (durationMs <= 0) return 0.0
+            val distanceKm = distanceMeters / 1000.0
+            val durationHours = durationMs / 3600000.0
+            return distanceKm / durationHours
+        }
+}
