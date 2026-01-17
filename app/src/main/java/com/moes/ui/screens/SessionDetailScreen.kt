@@ -14,7 +14,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
@@ -49,28 +48,29 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+// ... imports rimangono uguali
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SessionDetailScreen(
     sessionId: String,
-    isPostWorkout: Boolean = false,
+    // MODIFICA: Rimosso parametro isPostWorkout
     onNavigateBack: () -> Unit,
     viewModel: SessionDetailViewModel = viewModel(factory = ViewModelFactory(LocalContext.current))
 ) {
+    // ... (LaunchedEffect e caricamento sessione rimangono uguali) ...
     LaunchedEffect(sessionId) {
         viewModel.loadSession(sessionId)
     }
 
     val session by viewModel.session.collectAsState()
 
-    // Usiamo uno stato locale per il testo modificabile
     var titleText by remember { mutableStateOf("") }
     var isInitialized by remember { mutableStateOf(false) }
 
-    // Inizializza il testo solo la prima volta che la sessione viene caricata
     LaunchedEffect(session) {
         if (!isInitialized) {
-            session?.let { s -> // Usa let per sicurezza
+            session?.let { s ->
                 titleText = s.title
                 isInitialized = true
             }
@@ -80,19 +80,18 @@ fun SessionDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isPostWorkout) "Riepilogo Corsa" else "Dettaglio") },
+                // MODIFICA: Titolo unificato
+                title = { Text("Dettaglio Allenamento") },
                 navigationIcon = {
-                    // Mostra la freccia indietro solo se NON è il recap appena finito
-                    // (Nel recap obblighiamo a usare i bottoni sotto)
-                    if (!isPostWorkout) {
-                        IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.AutoMirrored.Default.ArrowBack, "Back")
-                        }
+                    // MODIFICA: Icona indietro sempre visibile
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
         }
     ) { padding ->
+        // ... (Tutto il contenuto del corpo rimane identico) ...
         if (session == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
@@ -105,6 +104,10 @@ fun SessionDetailScreen(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
+                // ... Mappa, TextField, Statistiche e Bottoni rimangono uguali ...
+                // COPIA INCOLLA IL RESTO DEL CONTENUTO CHE AVEVI GIA'
+                // (Mappa, Titolo editabile, Data, StatBox, Bottoni Elimina/Salva)
+
                 // 1. MAPPA
                 Box(modifier = Modifier
                     .height(300.dp)
@@ -118,7 +121,6 @@ fun SessionDetailScreen(
                 // 2. CONTENUTO
                 Column(modifier = Modifier.padding(16.dp)) {
 
-                    // CAMPO TITOLO (SEMPRE EDITABILE)
                     OutlinedTextField(
                         value = titleText,
                         onValueChange = { titleText = it },
@@ -138,7 +140,6 @@ fun SessionDetailScreen(
 
                     Spacer(Modifier.height(24.dp))
 
-                    // STATISTICHE
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         StatBox("Distanza", String.format("%.2f km", s.distanceMeters / 1000))
                         StatBox("Durata", formatDuration(s.durationMs))
@@ -147,17 +148,13 @@ fun SessionDetailScreen(
 
                     Spacer(Modifier.height(32.dp))
 
-                    // BOTTONI
                     Row(
                         Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Tasto ELIMINA
                         OutlinedButton(
                             onClick = {
-                                viewModel.deleteSession {
-                                    onNavigateBack()
-                                }
+                                viewModel.deleteSession { onNavigateBack() }
                             },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
@@ -167,12 +164,9 @@ fun SessionDetailScreen(
                             Text("Elimina")
                         }
 
-                        // Tasto SALVA (Sempre visibile per confermare modifiche o uscire dal recap)
                         Button(
                             onClick = {
-                                viewModel.saveTitle(titleText) {
-                                    onNavigateBack()
-                                }
+                                viewModel.saveTitle(titleText) { onNavigateBack() }
                             },
                             modifier = Modifier.weight(1f)
                         ) {
@@ -187,6 +181,7 @@ fun SessionDetailScreen(
     }
 }
 
+// ... Funzioni helper (StatBox, formatDuration, calculatePace) rimangono uguali
 @Composable
 fun StatBox(label: String, value: String) {
     Column {

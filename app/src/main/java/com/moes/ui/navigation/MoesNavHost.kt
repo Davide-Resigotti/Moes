@@ -50,10 +50,23 @@ fun MoesNavHost() {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
                 items.forEach { screen ->
+                    // MODIFICA QUI: Logica "intelligente" per la selezione
+                    val isSelected = if (screen == Screen.Sessions) {
+                        // Se siamo sulla tab Sessions, controlliamo se la rotta corrente è
+                        // Sessions OPPURE SessionDetail
+                        currentDestination?.hierarchy?.any { dest ->
+                            dest.route == Routes.SESSIONS ||
+                                    dest.route == Routes.SESSION_DETAIL // Usa la costante definita in Routes.kt
+                        } == true
+                    } else {
+                        // Comportamento standard per Home e Account
+                        currentDestination?.hierarchy?.any { it.route == screen.route } == true
+                    }
+
                     NavigationBarItem(
                         icon = { Icon(screen.icon, contentDescription = screen.title) },
                         label = { Text(screen.title) },
-                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                        selected = isSelected, // Usa la nostra variabile calcolata
                         onClick = {
                             navController.navigate(screen.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
@@ -74,42 +87,45 @@ fun MoesNavHost() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Routes.HOME) {
-                // COLLEGAMENTO 1: Quando finisce l'allenamento, vai ai dettagli in modalità POST-WORKOUT (true)
                 HomeScreen(
                     onNavigateToSummary = { sessionId ->
-                        navController.navigate(
-                            Routes.sessionDetail(sessionId, isPostWorkout = true)
-                        )
+                        // 1. Vai alla lista sessioni (resetta stack)
+                        navController.navigate(Routes.SESSIONS) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+
+                        // 2. Apri il dettaglio
+                        navController.navigate(Routes.sessionDetail(sessionId))
                     }
                 )
             }
+
             composable(Routes.ACCOUNT) {
                 AuthScreen()
             }
+
             composable(Routes.SESSIONS) {
-                // COLLEGAMENTO 2: Quando clicchi una card, vai ai dettagli in modalità LETTURA (false)
                 SessionsScreen(
                     onSessionClick = { sessionId ->
-                        navController.navigate(
-                            Routes.sessionDetail(sessionId, isPostWorkout = false)
-                        )
+                        navController.navigate(Routes.sessionDetail(sessionId))
                     }
                 )
             }
+
             composable(
                 route = Routes.SESSION_DETAIL,
                 arguments = listOf(
-                    navArgument("sessionId") { type = NavType.StringType },
-                    navArgument("isPostWorkout") { type = NavType.BoolType; defaultValue = false }
+                    navArgument("sessionId") { type = NavType.StringType }
                 )
             ) { backStackEntry ->
-                val sessionId =
-                    backStackEntry.arguments?.getString("sessionId") ?: return@composable
-                val isPostWorkout = backStackEntry.arguments?.getBoolean("isPostWorkout") ?: false
+                val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
 
                 SessionDetailScreen(
                     sessionId = sessionId,
-                    isPostWorkout = isPostWorkout,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
