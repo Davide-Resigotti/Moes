@@ -5,12 +5,10 @@ import android.util.Log
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -20,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DirectionsRun
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
@@ -157,10 +154,18 @@ fun HomeScreen(
     var viewportDataSource by remember { mutableStateOf<MapboxNavigationViewportDataSource?>(null) }
     var navigationCamera by remember { mutableStateOf<NavigationCamera?>(null) }
     val routeLineApi = remember { MapboxRouteLineApi(MapboxRouteLineApiOptions.Builder().build()) }
-    val routeLineView = remember { MapboxRouteLineView(MapboxRouteLineViewOptions.Builder(context).build()) }
+    val routeLineView =
+        remember { MapboxRouteLineView(MapboxRouteLineViewOptions.Builder(context).build()) }
     val routeArrowApi = remember { MapboxRouteArrowApi() }
-    val routeArrowView = remember { MapboxRouteArrowView(RouteArrowOptions.Builder(context).build()) }
-    val maneuverApi = remember { MapboxManeuverApi(MapboxDistanceFormatter(DistanceFormatterOptions.Builder(context).build())) }
+    val routeArrowView =
+        remember { MapboxRouteArrowView(RouteArrowOptions.Builder(context).build()) }
+    val maneuverApi = remember {
+        MapboxManeuverApi(
+            MapboxDistanceFormatter(
+                DistanceFormatterOptions.Builder(context).build()
+            )
+        )
+    }
     val mapboxNavigation = remember { MapboxNavigationProvider.retrieve() }
     val routeProgressObserver = remember {
         RouteProgressObserver { routeProgress ->
@@ -282,10 +287,20 @@ fun HomeScreen(
 
                     viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap).apply {
                         overviewPadding = with(density) {
-                            EdgeInsets(100.dp.toPx().toDouble(), 40.dp.toPx().toDouble(), 100.dp.toPx().toDouble(), 40.dp.toPx().toDouble())
+                            EdgeInsets(
+                                100.dp.toPx().toDouble(),
+                                40.dp.toPx().toDouble(),
+                                100.dp.toPx().toDouble(),
+                                40.dp.toPx().toDouble()
+                            )
                         }
                         followingPadding = with(density) {
-                            EdgeInsets(180.dp.toPx().toDouble(), 40.dp.toPx().toDouble(), 180.dp.toPx().toDouble(), 40.dp.toPx().toDouble())
+                            EdgeInsets(
+                                100.dp.toPx().toDouble(),
+                                40.dp.toPx().toDouble(),
+                                350.dp.toPx().toDouble(),
+                                40.dp.toPx().toDouble()
+                            )
                         }
                     }
                     viewportDataSource?.overviewPitchPropertyOverride(0.0)
@@ -317,6 +332,7 @@ fun HomeScreen(
                             showMapClickDialog = false
                             circleAnnotationManager?.deleteAll()
                         }
+
                         override fun onMove(detector: MoveGestureDetector): Boolean = false
                         override fun onMoveEnd(detector: MoveGestureDetector) {}
                     })
@@ -331,7 +347,11 @@ fun HomeScreen(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .statusBarsPadding()
-                    .padding(top = 16.dp, start = navBarHorizontalMargin, end = navBarHorizontalMargin)
+                    .padding(
+                        top = 16.dp,
+                        start = navBarHorizontalMargin,
+                        end = navBarHorizontalMargin
+                    )
             ) {
                 SearchBar(
                     query = searchQuery,
@@ -359,7 +379,7 @@ fun HomeScreen(
             }
         }
 
-        val trainingBannerHeightApprox = 140.dp
+        val trainingBannerHeightApprox = 180.dp
         val buttonsBottomPadding = if (trainingState == TrainingState.IDLE) {
             bottomObstructionHeight + 16.dp
         } else {
@@ -411,7 +431,10 @@ fun HomeScreen(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = Color.White
                         ) {
-                            Icon(Icons.Default.DirectionsRun, contentDescription = "Start Navigation")
+                            Icon(
+                                Icons.Default.DirectionsRun,
+                                contentDescription = "Start Navigation"
+                            )
                         }
 
                         Spacer(modifier = Modifier.width(16.dp))
@@ -505,6 +528,7 @@ fun HomeScreen(
         }
     }
 }
+
 // ... MapClickPopup unchanged ...
 @Composable
 private fun MapClickPopup(
