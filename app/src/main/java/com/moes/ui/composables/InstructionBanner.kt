@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.moes.utils.FormatUtils
 
 @Composable
 fun InstructionBanner(
@@ -40,36 +41,32 @@ fun InstructionBanner(
     maneuverModifier: String?,
     modifier: Modifier = Modifier
 ) {
-    // Surface a forma di pillola (CircleShape) alta 64dp
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .height(64.dp), // STESSA ALTEZZA DELLA NAVBAR
-        shape = CircleShape, // STESSA FORMA DELLA NAVBAR
-        shadowElevation = 12.dp, // STESSA OMBRA
+            .height(64.dp),
+        shape = CircleShape,
+        shadowElevation = 12.dp,
         color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 8.dp), // Padding interno minimo
+                .padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 1. ICONA MANOVRA (Cerchio Arancione)
             ManeuverIcon(maneuverType, maneuverModifier)
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // 2. TESTO ISTRUZIONI
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight(),
                 verticalArrangement = Arrangement.Center
             ) {
-                // DISTANZA (Grande e ben visibile)
                 Text(
-                    text = formatDistanceNice(distanceRemaining),
+                    text = FormatUtils.formatRawDistance(distanceRemaining),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
@@ -78,14 +75,13 @@ fun InstructionBanner(
                     lineHeight = 20.sp
                 )
 
-                // ISTRUZIONE VIA (Più piccola, GRIGIA, max 1 riga)
                 if (instruction.isNotEmpty()) {
                     Text(
-                        text = cleanInstruction(instruction),
+                        text = instruction,
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontSize = 13.sp
                         ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant, // GRIGIO
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -99,10 +95,9 @@ fun InstructionBanner(
 private fun ManeuverIcon(maneuverType: String?, maneuverModifier: String?) {
     val (icon, rotation) = getManeuverIcon(maneuverType, maneuverModifier)
 
-    // Sfondo rotondo color Arancione (Primary)
     Box(
         modifier = Modifier
-            .size(48.dp) // Dimensione ottimizzata per stare nei 64dp di altezza
+            .size(48.dp)
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.primary),
         contentAlignment = Alignment.Center
@@ -118,36 +113,10 @@ private fun ManeuverIcon(maneuverType: String?, maneuverModifier: String?) {
     }
 }
 
-// Rimuove parti ridondanti dell'istruzione se necessario
-private fun cleanInstruction(text: String): String {
-    // Esempio: se Mapbox ritorna testo molto lungo, qui possiamo pulirlo.
-    // Per ora ritorniamo il testo grezzo ma ellissato dalla UI.
-    return text
-}
-
-// Funzione helper per rendere la distanza più leggibile
-private fun formatDistanceNice(rawDistance: String): String {
-    return try {
-        val dist = rawDistance.toDoubleOrNull()
-        if (dist != null) {
-            if (dist >= 1000) {
-                String.format("%.1f km", dist / 1000)
-            } else {
-                "${dist.toInt()} m"
-            }
-        } else {
-            rawDistance
-        }
-    } catch (e: Exception) {
-        rawDistance
-    }
-}
-
 private fun getManeuverIcon(type: String?, modifier: String?): Pair<ImageVector, Float> {
     val baseIcon = Icons.AutoMirrored.Filled.ArrowForward
     return when (type) {
-        "arrive" -> baseIcon to -90f
-        "depart" -> baseIcon to -90f
+        "arrive", "depart" -> baseIcon to -90f
         "turn", "fork", "roundabout", "rotary" -> {
             when (modifier) {
                 "sharp right" -> baseIcon to 45f
@@ -161,6 +130,7 @@ private fun getManeuverIcon(type: String?, modifier: String?): Pair<ImageVector,
                 else -> baseIcon to -90f
             }
         }
+
         else -> baseIcon to -90f
     }
 }
