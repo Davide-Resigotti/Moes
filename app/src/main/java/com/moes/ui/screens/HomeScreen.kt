@@ -2,32 +2,23 @@ package com.moes.ui.screens
 
 import android.annotation.SuppressLint
 import android.util.Log
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -40,12 +31,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -55,7 +43,6 @@ import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.EdgeInsets
 import com.mapbox.maps.MapView
-import com.mapbox.maps.ScreenCoordinate
 import com.mapbox.maps.plugin.PuckBearing
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.annotation.annotations
@@ -65,7 +52,7 @@ import com.mapbox.maps.plugin.annotation.generated.createCircleAnnotationManager
 import com.mapbox.maps.plugin.attribution.attribution
 import com.mapbox.maps.plugin.compass.compass
 import com.mapbox.maps.plugin.gestures.OnMoveListener
-import com.mapbox.maps.plugin.gestures.addOnMapClickListener
+import com.mapbox.maps.plugin.gestures.addOnMapLongClickListener
 import com.mapbox.maps.plugin.gestures.addOnMoveListener
 import com.mapbox.maps.plugin.locationcomponent.createDefault2DPuck
 import com.mapbox.maps.plugin.locationcomponent.location
@@ -105,9 +92,6 @@ fun HomeScreen(
     viewModel: HomeScreenViewModel = viewModel(factory = ViewModelFactory(LocalContext.current)),
     onNavigateToSummary: (String) -> Unit
 ) {
-    // ... [INIZIALIZZAZIONE RIMANE UGUALE FINO AL LAYOUT] ...
-    // COPIA TUTTO L'INIZIO FINO A "val navBarHeight = 64.dp"
-
     val navigationRoutes by viewModel.navigationRoutes.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val searchSuggestions by viewModel.searchSuggestions.collectAsState()
@@ -118,9 +102,6 @@ fun HomeScreen(
     var distanceText by remember { mutableStateOf("") }
     var maneuver by remember { mutableStateOf<Maneuver?>(null) }
     var lastEnhancedLocation by remember { mutableStateOf<Location?>(null) }
-    var showMapClickDialog by remember { mutableStateOf(false) }
-    var clickedMapPoint by remember { mutableStateOf<Point?>(null) }
-    var clickedScreenCoordinate by remember { mutableStateOf<ScreenCoordinate?>(null) }
 
     val liveDuration by produceState(
         initialValue = 0L,
@@ -309,12 +290,12 @@ fun HomeScreen(
 
                     navigationCamera = NavigationCamera(mapboxMap, camera, viewportDataSource!!)
 
-                    mapboxMap.addOnMapClickListener { point ->
+                    mapboxMap.addOnMapLongClickListener { point ->
                         if (trainingState == TrainingState.IDLE) {
-                            clickedMapPoint = point
-                            clickedScreenCoordinate = mapboxMap.pixelForCoordinate(point)
-                            showMapClickDialog = true
+                            // Pulisci vecchi marker
                             circleAnnotationManager?.deleteAll()
+
+                            // Aggiungi marker visivo
                             val circleAnnotationOptions = CircleAnnotationOptions()
                                 .withPoint(point)
                                 .withCircleRadius(8.0)
@@ -322,6 +303,9 @@ fun HomeScreen(
                                 .withCircleStrokeWidth(2.0)
                                 .withCircleStrokeColor("#ffffff")
                             circleAnnotationManager?.create(circleAnnotationOptions)
+
+                            // Richiedi SUBITO la rotta
+                            viewModel.requestRouteToPoint(point)
                         }
                         true
                     }
@@ -329,8 +313,6 @@ fun HomeScreen(
                     mapboxMap.addOnMoveListener(object : OnMoveListener {
                         override fun onMoveBegin(detector: MoveGestureDetector) {
                             navigationCamera?.requestNavigationCameraToIdle()
-                            showMapClickDialog = false
-                            circleAnnotationManager?.deleteAll()
                         }
 
                         override fun onMove(detector: MoveGestureDetector): Boolean = false
@@ -387,83 +369,73 @@ fun HomeScreen(
         }
 
         // 3. LOCATION BUTTON (BIANCO E GRIGIO)
-        FloatingActionButton(
-            onClick = {
-                val currentLoc = lastEnhancedLocation
-                if (currentLoc != null) {
-                    mapViewState.value?.camera?.easeTo(
-                        CameraOptions.Builder()
-                            .center(Point.fromLngLat(currentLoc.longitude, currentLoc.latitude))
-                            .build(),
-                    )
-                }
-                if (trainingState == TrainingState.RUNNING || trainingState == TrainingState.PAUSED) {
-                    navigationCamera?.requestNavigationCameraToFollowing()
-                } else {
-                    navigationCamera?.requestNavigationCameraToOverview()
-                }
-            },
-            shape = CircleShape,
-            containerColor = Color.White, // BIANCO
-            contentColor = Color.Gray,    // GRIGIO
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(bottom = buttonsBottomPadding, end = navBarHorizontalMargin)
+                .padding(bottom = buttonsBottomPadding, end = navBarHorizontalMargin),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(imageVector = Icons.Default.NearMe, contentDescription = "My Location")
+            // PULSANTE CLEAR ROUTE (X)
+            // Appare SOLO se c'è una rotta e non siamo in allenamento
+            if (navigationRoutes.isNotEmpty() && trainingState == TrainingState.IDLE) {
+                SmallFloatingActionButton(
+                    onClick = {
+                        viewModel.clearRoute()
+                        viewportDataSource?.clearRouteData()
+                        circleAnnotationManager?.deleteAll()
+                    },
+                    shape = CircleShape,
+                    containerColor = MaterialTheme.colorScheme.errorContainer, // Rosso/Errore
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Clear Route")
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // PULSANTE LOCATION (Sempre presente)
+            FloatingActionButton(
+                onClick = {
+                    val currentLoc = lastEnhancedLocation
+                    if (currentLoc != null) {
+                        mapViewState.value?.camera?.easeTo(
+                            CameraOptions.Builder()
+                                .center(Point.fromLngLat(currentLoc.longitude, currentLoc.latitude))
+                                .build(),
+                        )
+                    }
+                    if (trainingState == TrainingState.RUNNING || trainingState == TrainingState.PAUSED) {
+                        navigationCamera?.requestNavigationCameraToFollowing()
+                    } else {
+                        navigationCamera?.requestNavigationCameraToOverview()
+                    }
+                },
+                shape = CircleShape,
+                containerColor = Color.White,
+                contentColor = Color.Gray
+            ) {
+                Icon(imageVector = Icons.Default.NearMe, contentDescription = "My Location")
+            }
         }
 
-        // 4. START BUTTON (CENTRATO e ROTONDO)
+        // 4. START BUTTON (CENTRATO)
         if (trainingState == TrainingState.IDLE) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter) // MODIFICA: Centrato
-                    .padding(bottom = buttonsBottomPadding) // Nessun padding laterale, solo bottom
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = buttonsBottomPadding)
             ) {
-                if (navigationRoutes.isNotEmpty()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        FloatingActionButton(
-                            onClick = {
-                                viewModel.onStartTraining()
-                                navigationCamera?.requestNavigationCameraToFollowing()
-                            },
-                            shape = CircleShape,
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = Color.White
-                        ) {
-                            Icon(
-                                Icons.Default.DirectionsRun,
-                                contentDescription = "Start Navigation"
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        SmallFloatingActionButton(
-                            onClick = {
-                                viewModel.clearRoute()
-                                viewportDataSource?.clearRouteData()
-                                circleAnnotationManager?.deleteAll()
-                            },
-                            shape = CircleShape,
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.onErrorContainer
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = "Clear")
-                        }
-                    }
-                } else {
-                    FloatingActionButton(
-                        onClick = {
-                            viewModel.onStartTraining()
-                            navigationCamera?.requestNavigationCameraToFollowing()
-                        },
-                        shape = CircleShape,
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = Color.White
-                    ) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = "Start Workout")
-                    }
+                FloatingActionButton(
+                    onClick = {
+                        viewModel.onStartTraining()
+                        navigationCamera?.requestNavigationCameraToFollowing()
+                    },
+                    shape = CircleShape,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White
+                ) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = "Start")
                 }
             }
         }
@@ -488,67 +460,6 @@ fun HomeScreen(
                         navigationCamera?.requestNavigationCameraToOverview()
                     }
                 )
-            }
-        }
-
-        // ... (Popup logic unchanged) ...
-        if (showMapClickDialog) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) {
-                        detectTapGestures(onTap = {
-                            showMapClickDialog = false
-                            circleAnnotationManager?.deleteAll()
-                        })
-                    }
-            )
-            clickedScreenCoordinate?.let {
-                val x = with(density) { it.x.toFloat().toDp() }
-                val y = with(density) { it.y.toFloat().toDp() }
-                var popupSize by remember { mutableStateOf(IntSize.Zero) }
-                Box(
-                    Modifier
-                        .onSizeChanged { popupSize = it }
-                        .offset(
-                            x = x - with(density) { (popupSize.width / 2).toDp() },
-                            y = y - with(density) { popupSize.height.toDp() } - 16.dp
-                        )
-                        .pointerInput(Unit) { detectTapGestures() }
-                ) {
-                    MapClickPopup(
-                        onConfirm = {
-                            clickedMapPoint?.let { point -> viewModel.requestRouteToPoint(point) }
-                            showMapClickDialog = false
-                            circleAnnotationManager?.deleteAll()
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-// ... MapClickPopup unchanged ...
-@Composable
-private fun MapClickPopup(
-    modifier: Modifier = Modifier,
-    onConfirm: () -> Unit,
-) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            Text(text = "Route to this location?", style = MaterialTheme.typography.bodyMedium)
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(onClick = onConfirm) {
-                Text(text = "Go")
             }
         }
     }
