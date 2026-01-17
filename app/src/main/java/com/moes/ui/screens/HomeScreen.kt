@@ -169,38 +169,30 @@ fun HomeScreen(
         object : LocationObserver {
             var firstLocationReceived = false
 
-            // 1. GESTIONE RAW (GPS Puro) -> Usata in IDLE
+            // 1. GESTIONE RAW (IDLE)
             override fun onNewRawLocation(rawLocation: Location) {
                 if (trainingState == TrainingState.IDLE) {
-                    // Salviamo la posizione per il tasto "My Location"
                     lastEnhancedLocation = rawLocation
-
-                    // Passiamo la posizione GREZZA al provider.
-                    // Questo sblocca il puck dalla strada e abilita la bussola reale.
                     navigationLocationProvider.changePosition(
                         location = rawLocation,
-                        keyPoints = emptyList() // Nessun punto di aggancio
+                        keyPoints = emptyList()
                     )
-
-                    // Aggiorniamo la camera se serve (es. prima volta)
+                    // In IDLE va bene usare easeTo per centrare all'inizio
                     updateCameraIfNeeded(rawLocation)
                 }
             }
 
-            // 2. GESTIONE MATCHED (Agganciata alla strada) -> Usata in TRAINING
+            // 2. GESTIONE MATCHED (TRAINING)
             override fun onNewLocationMatcherResult(locationMatcherResult: LocationMatcherResult) {
                 if (trainingState != TrainingState.IDLE) {
                     val enhanced = locationMatcherResult.enhancedLocation
                     lastEnhancedLocation = enhanced
 
-                    // Passiamo la posizione AGGANCIATA al provider.
-                    // Utile per seguire la linea blu della rotta senza "saltellare".
                     navigationLocationProvider.changePosition(
                         location = enhanced,
                         keyPoints = locationMatcherResult.keyPoints
                     )
 
-                    // Aggiorniamo viewport e camera
                     viewportDataSource?.onLocationChanged(enhanced)
                     viewportDataSource?.evaluate()
 
@@ -379,17 +371,17 @@ fun HomeScreen(
         )
 
         // 2. SEARCH BAR / INSTRUCTIONS
-        if (trainingState == TrainingState.IDLE) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .statusBarsPadding()
-                    .padding(
-                        top = 16.dp,
-                        start = navBarHorizontalMargin,
-                        end = navBarHorizontalMargin
-                    )
-            ) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .statusBarsPadding()
+                .padding(
+                    top = 16.dp,
+                    start = navBarHorizontalMargin, // 24.dp
+                    end = navBarHorizontalMargin    // 24.dp
+                )
+        ) {
+            if (trainingState == TrainingState.IDLE) {
                 SearchBar(
                     query = searchQuery,
                     onQueryChanged = { viewModel.onSearchQueryChanged(it) },
@@ -400,13 +392,7 @@ fun HomeScreen(
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
-            }
-        } else if ((trainingState == TrainingState.RUNNING || trainingState == TrainingState.PAUSED) && navigationRoutes.isNotEmpty()) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .statusBarsPadding()
-            ) {
+            } else if (navigationRoutes.isNotEmpty()) {
                 InstructionBanner(
                     instruction = instructionText,
                     distanceRemaining = distanceText,
@@ -510,7 +496,6 @@ fun HomeScreen(
                 FloatingActionButton(
                     onClick = {
                         viewModel.onStartTraining()
-                        navigationCamera?.requestNavigationCameraToFollowing()
                     },
                     shape = CircleShape,
                     containerColor = MaterialTheme.colorScheme.primary,
