@@ -3,20 +3,45 @@ package com.moes
 import android.app.Application
 import com.mapbox.navigation.base.options.NavigationOptions
 import com.mapbox.navigation.core.MapboxNavigationProvider
+import com.moes.data.local.AppDatabase
+import com.moes.data.remote.FirestoreDataSource
+import com.moes.repositories.AuthRepository
+import com.moes.repositories.DatabaseRepository
+import com.moes.repositories.MapboxNavigationRepository
+import com.moes.repositories.MapboxSearchRepository
+import com.moes.repositories.TrainingRepository
 
-/**
- * The Application class for the Moes app.
- * This is the central point for initializing application-wide components.
- */
 class MoesApplication : Application() {
+
+    // ISTANZE UNICHE (SINGLETON)
+    lateinit var database: AppDatabase
+    lateinit var authRepository: AuthRepository
+    lateinit var databaseRepository: DatabaseRepository
+    lateinit var trainingRepository: TrainingRepository
+    lateinit var searchRepository: MapboxSearchRepository
+    lateinit var navigationRepository: MapboxNavigationRepository
 
     override fun onCreate() {
         super.onCreate()
 
-        // Initialize Mapbox Navigation
+        // 1. Mapbox
         MapboxNavigationProvider.create(
             NavigationOptions.Builder(this.applicationContext)
                 .build()
         )
+
+        // 2. Database & Auth
+        database = AppDatabase.getDatabase(this)
+        val firestoreDataSource = FirestoreDataSource()
+        authRepository = AuthRepository()
+
+        // 3. Repositories
+        databaseRepository = DatabaseRepository(database.trainingDao(), firestoreDataSource)
+
+        // Questo è il punto critico: TrainingRepository creato UNA SOLA VOLTA
+        trainingRepository = TrainingRepository(this, databaseRepository, authRepository)
+
+        searchRepository = MapboxSearchRepository(this)
+        navigationRepository = MapboxNavigationRepository()
     }
 }

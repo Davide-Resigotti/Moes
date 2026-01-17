@@ -23,38 +23,41 @@ class SessionDetailViewModel(
         }
     }
 
-    // Aggiorna il titolo e salva nel DB
     fun saveTitle(newTitle: String, onComplete: () -> Unit) {
         val currentSession = _session.value ?: return
-
-        // 1. TRIM: Rimuove spazi vuoti all'inizio e alla fine
         val trimmedTitle = newTitle.trim()
 
-        // Se il titolo non è cambiato (dopo il trim), non fare nulla ed esci
         if (currentSession.title == trimmedTitle) {
             onComplete()
             return
         }
 
         viewModelScope.launch {
-            // 2. Aggiorna DB locale con il titolo pulito
-            databaseRepository.updateSessionTitle(currentSession.id, trimmedTitle)
-
-            // 3. Aggiorna lo stato UI locale
-            _session.value = currentSession.copy(title = trimmedTitle)
-
-            // 4. Tenta subito di sincronizzare con Firebase
-            databaseRepository.syncPendingSessions()
-
-            onComplete()
+            try {
+                databaseRepository.updateSessionTitle(currentSession.id, trimmedTitle)
+                _session.value = currentSession.copy(title = trimmedTitle)
+                databaseRepository.syncPendingSessions()
+            } catch (_: Exception) {
+            } finally {
+                // Assicura che la navigazione avvenga comunque
+                onComplete()
+            }
         }
     }
 
     fun deleteSession(onComplete: () -> Unit) {
-        val currentSession = _session.value ?: return
+        // Usiamo l'ID della sessione corrente, o usciamo se non c'è (caso raro)
+        val currentSessionId = _session.value?.id ?: return
+
         viewModelScope.launch {
-            databaseRepository.deleteSession(currentSession.id)
-            onComplete()
+            try {
+                databaseRepository.deleteSession(currentSessionId)
+            } catch (_: Exception) {
+            } finally {
+                // FONDAMENTALE: Torna indietro SEMPRE, anche se c'è stato un errore o il DB era lento.
+                // Questo garantisce che l'utente non rimanga bloccato sulla schermata.
+                onComplete()
+            }
         }
     }
 }
