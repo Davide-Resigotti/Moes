@@ -81,23 +81,20 @@ class DatabaseRepository(
     suspend fun getSessionById(id: String): TrainingSession? = trainingDao.getSessionById(id)
 
     suspend fun deleteSession(id: String) {
-        // 1. Recupera la sessione dal DB locale per avere i dati (userId e sync status)
-        val session = trainingDao.getSessionById(id) ?: return
+        // 1. Recupera la sessione per controllare se va cancellata dal Cloud
+        val session = trainingDao.getSessionById(id)
 
-        // 2. Se la sessione era sincronizzata, cancellala anche da Firestore
-        if (session.isSynced) {
+        // 2. Gestione Cloud (Solo se la sessione esiste ed è sincronizzata)
+        if (session != null && session.isSynced) {
             try {
-                // Nota: Firestore gestisce l'offline automaticamente.
-                // Se sei offline, la cancellazione viene messa in coda e eseguita appena torna la rete.
                 firestoreDataSource.deleteSession(session.userId, id)
             } catch (e: Exception) {
                 e.printStackTrace()
-                // Anche se fallisce il cloud (caso raro con persistenza attiva),
-                // procediamo a cancellare in locale come richiesto dall'utente.
             }
         }
 
-        // 3. Cancella definitivamente dal DB locale (Risolto TODO)
+        // 3. CANCELLAZIONE LOCALE (FONDAMENTALE: Eseguila SEMPRE, non usare 'return' prima)
+        // Anche se il punto 1 fallisce o ritorna null, noi forziamo la cancellazione dell'ID.
         trainingDao.deleteSessionById(id)
     }
 
