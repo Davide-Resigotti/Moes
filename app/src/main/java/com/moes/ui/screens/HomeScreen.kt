@@ -15,15 +15,21 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.NearMe
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -36,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -58,11 +65,15 @@ import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.CircleAnnotationManager
 import com.mapbox.maps.plugin.annotation.generated.CircleAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.createCircleAnnotationManager
+import com.mapbox.maps.plugin.attribution.attribution
+import com.mapbox.maps.plugin.compass.compass
 import com.mapbox.maps.plugin.gestures.OnMoveListener
 import com.mapbox.maps.plugin.gestures.addOnMapClickListener
 import com.mapbox.maps.plugin.gestures.addOnMoveListener
 import com.mapbox.maps.plugin.locationcomponent.createDefault2DPuck
 import com.mapbox.maps.plugin.locationcomponent.location
+import com.mapbox.maps.plugin.logo.logo
+import com.mapbox.maps.plugin.scalebar.scalebar
 import com.mapbox.navigation.base.ExperimentalPreviewMapboxNavigationAPI
 import com.mapbox.navigation.base.formatter.DistanceFormatterOptions
 import com.mapbox.navigation.core.MapboxNavigationProvider
@@ -97,26 +108,22 @@ fun HomeScreen(
     viewModel: HomeScreenViewModel = viewModel(factory = ViewModelFactory(LocalContext.current)),
     onNavigateToSummary: (String) -> Unit
 ) {
+    // ... [INIZIALIZZAZIONE RIMANE UGUALE FINO AL LAYOUT] ...
+    // COPIA TUTTO L'INIZIO FINO A "val navBarHeight = 64.dp"
+
     val navigationRoutes by viewModel.navigationRoutes.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val searchSuggestions by viewModel.searchSuggestions.collectAsState()
     val trainingState by viewModel.trainingState.collectAsState()
     val liveTrainingSession by viewModel.liveTrainingSession.collectAsState()
     val finishedSessionId by viewModel.finishedSessionId.collectAsState()
-
-    // --- UI STATE FOR INSTRUCTIONS ---
     var instructionText by remember { mutableStateOf("") }
     var distanceText by remember { mutableStateOf("") }
     var maneuver by remember { mutableStateOf<Maneuver?>(null) }
-
-
-    // --- CACHE LAST LOCATION FOR INSTANT BUTTON RESPONSE ---
     var lastEnhancedLocation by remember { mutableStateOf<Location?>(null) }
-
     var showMapClickDialog by remember { mutableStateOf(false) }
     var clickedMapPoint by remember { mutableStateOf<Point?>(null) }
     var clickedScreenCoordinate by remember { mutableStateOf<ScreenCoordinate?>(null) }
-
 
     val liveDuration by produceState(
         initialValue = 0L,
@@ -144,49 +151,26 @@ fun HomeScreen(
 
     val context = LocalContext.current
     val density = LocalDensity.current
-
     val mapViewState = remember { mutableStateOf<MapView?>(null) }
     val navigationLocationProvider = remember { NavigationLocationProvider() }
     var circleAnnotationManager by remember { mutableStateOf<CircleAnnotationManager?>(null) }
-
     var viewportDataSource by remember { mutableStateOf<MapboxNavigationViewportDataSource?>(null) }
     var navigationCamera by remember { mutableStateOf<NavigationCamera?>(null) }
-
-    // --- MAPBOX API INITIALIZATION ---
-    val routeLineApi = remember {
-        MapboxRouteLineApi(MapboxRouteLineApiOptions.Builder().build())
-    }
-    val routeLineView = remember {
-        MapboxRouteLineView(MapboxRouteLineViewOptions.Builder(context).build())
-    }
-
+    val routeLineApi = remember { MapboxRouteLineApi(MapboxRouteLineApiOptions.Builder().build()) }
+    val routeLineView = remember { MapboxRouteLineView(MapboxRouteLineViewOptions.Builder(context).build()) }
     val routeArrowApi = remember { MapboxRouteArrowApi() }
-    val routeArrowView = remember {
-        MapboxRouteArrowView(RouteArrowOptions.Builder(context).build())
-    }
-
-    val maneuverApi = remember {
-        MapboxManeuverApi(
-            MapboxDistanceFormatter(DistanceFormatterOptions.Builder(context).build())
-        )
-    }
-
-    val mapboxNavigation = remember {
-        MapboxNavigationProvider.retrieve()
-    }
-
-    // --- OBSERVERS ---
+    val routeArrowView = remember { MapboxRouteArrowView(RouteArrowOptions.Builder(context).build()) }
+    val maneuverApi = remember { MapboxManeuverApi(MapboxDistanceFormatter(DistanceFormatterOptions.Builder(context).build())) }
+    val mapboxNavigation = remember { MapboxNavigationProvider.retrieve() }
     val routeProgressObserver = remember {
         RouteProgressObserver { routeProgress ->
             viewportDataSource?.onRouteProgressChanged(routeProgress)
             viewportDataSource?.evaluate()
-
             val style = mapViewState.value?.mapboxMap?.style
             if (style != null) {
                 val maneuverArrowResult = routeArrowApi.addUpcomingManeuverArrow(routeProgress)
                 routeArrowView.renderManeuverUpdate(style, maneuverArrowResult)
             }
-
             val maneuvers = maneuverApi.getManeuvers(routeProgress)
             maneuvers.fold(
                 { error -> Log.e("HomeScreen", "Maneuver Error: ${'$'}{error.errorMessage}") },
@@ -198,26 +182,19 @@ fun HomeScreen(
             )
         }
     }
-
     val locationObserver = remember {
         object : LocationObserver {
             var firstLocationReceived = false
-
             override fun onNewRawLocation(rawLocation: Location) {}
-
             override fun onNewLocationMatcherResult(locationMatcherResult: LocationMatcherResult) {
                 val enhanced = locationMatcherResult.enhancedLocation
-
-                // Save this for the button to use later
                 lastEnhancedLocation = enhanced
-
                 navigationLocationProvider.changePosition(
                     location = enhanced,
                     keyPoints = locationMatcherResult.keyPoints
                 )
                 viewportDataSource?.onLocationChanged(enhanced)
                 viewportDataSource?.evaluate()
-
                 if (!firstLocationReceived) {
                     firstLocationReceived = true
                     mapViewState.value?.camera?.easeTo(
@@ -231,15 +208,12 @@ fun HomeScreen(
             }
         }
     }
-
-    // --- SIDE EFFECTS ---
     LaunchedEffect(finishedSessionId) {
         finishedSessionId?.let { id ->
             onNavigateToSummary(id)
-            viewModel.clearFinishedSessionEvent() // Resetta per evitare loop
+            viewModel.clearFinishedSessionEvent()
         }
     }
-
     LaunchedEffect(navigationRoutes) {
         if (navigationRoutes.isNotEmpty()) {
             mapboxNavigation.setNavigationRoutes(navigationRoutes)
@@ -263,34 +237,38 @@ fun HomeScreen(
             }
         }
     }
-
     DisposableEffect(Unit) {
         mapboxNavigation.registerLocationObserver(locationObserver)
         mapboxNavigation.registerRouteProgressObserver(routeProgressObserver)
         mapboxNavigation.startTripSession()
-
         onDispose {
             mapboxNavigation.unregisterLocationObserver(locationObserver)
             mapboxNavigation.unregisterRouteProgressObserver(routeProgressObserver)
             mapboxNavigation.stopTripSession()
         }
     }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
-    val keyboardController =
-        LocalSoftwareKeyboardController.current // Keyboard controller to allow close it when needed
+    val navBarHeight = 64.dp
+    val navBarBottomMargin = 24.dp
+    val navBarHorizontalMargin = 24.dp
+    val bottomObstructionHeight = navBarHeight + navBarBottomMargin
 
     // --- UI LAYOUT ---
     Box(Modifier.fillMaxSize()) {
 
-        // 1. BACKGROUND: MAP
+        // 1. MAPPA
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
                 MapView(ctx).apply {
+                    compass.enabled = false
+                    scalebar.enabled = false
+                    logo.enabled = false
+                    attribution.enabled = false
+
                     circleAnnotationManager = annotations.createCircleAnnotationManager()
-                    mapboxMap.setCamera(
-                        CameraOptions.Builder().zoom(16.0).build()
-                    )
+                    mapboxMap.setCamera(CameraOptions.Builder().zoom(16.0).build())
 
                     location.apply {
                         setLocationProvider(navigationLocationProvider)
@@ -303,25 +281,13 @@ fun HomeScreen(
                     mapViewState.value = this
 
                     viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap).apply {
-                        // Tweak these for "Google Maps" style feel
                         overviewPadding = with(density) {
-                            EdgeInsets(
-                                100.dp.toPx().toDouble(),
-                                40.dp.toPx().toDouble(),
-                                100.dp.toPx().toDouble(),
-                                40.dp.toPx().toDouble()
-                            )
+                            EdgeInsets(100.dp.toPx().toDouble(), 40.dp.toPx().toDouble(), 100.dp.toPx().toDouble(), 40.dp.toPx().toDouble())
                         }
                         followingPadding = with(density) {
-                            EdgeInsets(
-                                180.dp.toPx().toDouble(),
-                                40.dp.toPx().toDouble(),
-                                180.dp.toPx().toDouble(),
-                                40.dp.toPx().toDouble()
-                            )
+                            EdgeInsets(180.dp.toPx().toDouble(), 40.dp.toPx().toDouble(), 180.dp.toPx().toDouble(), 40.dp.toPx().toDouble())
                         }
                     }
-                    // 45 degrees pitch is standard for navigation, 0 for overview
                     viewportDataSource?.overviewPitchPropertyOverride(0.0)
                     viewportDataSource?.followingPitchPropertyOverride(45.0)
                     viewportDataSource?.followingZoomPropertyOverride(16.5)
@@ -333,28 +299,24 @@ fun HomeScreen(
                             clickedMapPoint = point
                             clickedScreenCoordinate = mapboxMap.pixelForCoordinate(point)
                             showMapClickDialog = true
-
-                            // Drop a marker at the clicked point
                             circleAnnotationManager?.deleteAll()
-                            val circleAnnotationOptions: CircleAnnotationOptions =
-                                CircleAnnotationOptions()
-                                    .withPoint(point)
-                                    .withCircleRadius(8.0)
-                                    .withCircleColor("#ee4e8b")
-                                    .withCircleStrokeWidth(2.0)
-                                    .withCircleStrokeColor("#ffffff")
+                            val circleAnnotationOptions = CircleAnnotationOptions()
+                                .withPoint(point)
+                                .withCircleRadius(8.0)
+                                .withCircleColor("#ee4e8b")
+                                .withCircleStrokeWidth(2.0)
+                                .withCircleStrokeColor("#ffffff")
                             circleAnnotationManager?.create(circleAnnotationOptions)
                         }
                         true
                     }
-
+                    // ... (MoveListener uguale) ...
                     mapboxMap.addOnMoveListener(object : OnMoveListener {
                         override fun onMoveBegin(detector: MoveGestureDetector) {
                             navigationCamera?.requestNavigationCameraToIdle()
                             showMapClickDialog = false
-                            circleAnnotationManager?.deleteAll() // Remove markers when map moves
+                            circleAnnotationManager?.deleteAll()
                         }
-
                         override fun onMove(detector: MoveGestureDetector): Boolean = false
                         override fun onMoveEnd(detector: MoveGestureDetector) {}
                     })
@@ -363,20 +325,20 @@ fun HomeScreen(
             update = {}
         )
 
-        // 2. SEARCH BAR OR INSTRUCTIONS
+        // 2. SEARCH BAR / INSTRUCTIONS
         if (trainingState == TrainingState.IDLE) {
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .statusBarsPadding()
-                    .padding(top = 16.dp, start = 16.dp, end = 16.dp)
+                    .padding(top = 16.dp, start = navBarHorizontalMargin, end = navBarHorizontalMargin)
             ) {
                 SearchBar(
                     query = searchQuery,
                     onQueryChanged = { viewModel.onSearchQueryChanged(it) },
                     suggestions = searchSuggestions,
                     onSuggestionSelected = {
-                        keyboardController?.hide() // Hide the keyboard when a suggestion is selected
+                        keyboardController?.hide()
                         viewModel.onSuggestionSelected(it)
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -397,11 +359,16 @@ fun HomeScreen(
             }
         }
 
-        // 3. LOCATION BUTTON
-        val fabBottomPadding = if (trainingState == TrainingState.IDLE) 70.dp else 180.dp
+        val trainingBannerHeightApprox = 140.dp
+        val buttonsBottomPadding = if (trainingState == TrainingState.IDLE) {
+            bottomObstructionHeight + 16.dp
+        } else {
+            bottomObstructionHeight + trainingBannerHeightApprox + 16.dp
+        }
+
+        // 3. LOCATION BUTTON (BIANCO E GRIGIO)
         FloatingActionButton(
             onClick = {
-                /** Store the last location avoiding the 1s wait until the location update after the center location button is pressed.*/
                 val currentLoc = lastEnhancedLocation
                 if (currentLoc != null) {
                     mapViewState.value?.camera?.easeTo(
@@ -410,55 +377,81 @@ fun HomeScreen(
                             .build(),
                     )
                 }
-
-                /** Using requestNavigationCameraToOverview when workout isn't on.*/
                 if (trainingState == TrainingState.RUNNING || trainingState == TrainingState.PAUSED) {
                     navigationCamera?.requestNavigationCameraToFollowing()
                 } else {
                     navigationCamera?.requestNavigationCameraToOverview()
                 }
             },
-            /** Useful postiion in idle mode, should move up when training start to avoid being covered by the training banner */
+            shape = CircleShape,
+            containerColor = Color.White, // BIANCO
+            contentColor = Color.Gray,    // GRIGIO
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(bottom = fabBottomPadding, end = 16.dp)
+                .padding(bottom = buttonsBottomPadding, end = navBarHorizontalMargin)
         ) {
-            Icon(imageVector = Icons.Default.LocationOn, contentDescription = "My Location")
+            Icon(imageVector = Icons.Default.NearMe, contentDescription = "My Location")
         }
 
-        // 4. BOTTOM CONTROLS
+        // 4. START BUTTON (CENTRATO e ROTONDO)
         if (trainingState == TrainingState.IDLE) {
-            Column(
+            Box(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .align(Alignment.BottomCenter) // MODIFICA: Centrato
+                    .padding(bottom = buttonsBottomPadding) // Nessun padding laterale, solo bottom
             ) {
                 if (navigationRoutes.isNotEmpty()) {
-                    Button(onClick = {
-                        viewModel.onStartTraining()
-                        navigationCamera?.requestNavigationCameraToFollowing()
-                    }) { Text("Start Navigation") }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(onClick = {
-                        viewModel.clearRoute()
-                        viewportDataSource?.clearRouteData()
-                        circleAnnotationManager?.deleteAll()
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        FloatingActionButton(
+                            onClick = {
+                                viewModel.onStartTraining()
+                                navigationCamera?.requestNavigationCameraToFollowing()
+                            },
+                            shape = CircleShape,
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = Color.White
+                        ) {
+                            Icon(Icons.Default.DirectionsRun, contentDescription = "Start Navigation")
+                        }
 
-                    }) { Text("Clear Route") }
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        SmallFloatingActionButton(
+                            onClick = {
+                                viewModel.clearRoute()
+                                viewportDataSource?.clearRouteData()
+                                circleAnnotationManager?.deleteAll()
+                            },
+                            shape = CircleShape,
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Clear")
+                        }
+                    }
                 } else {
-                    Button(onClick = {
-                        viewModel.onStartTraining()
-                        navigationCamera?.requestNavigationCameraToFollowing()
-                    }) { Text("Start Workout") }
+                    FloatingActionButton(
+                        onClick = {
+                            viewModel.onStartTraining()
+                            navigationCamera?.requestNavigationCameraToFollowing()
+                        },
+                        shape = CircleShape,
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = Color.White
+                    ) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = "Start Workout")
+                    }
                 }
             }
         }
 
+        // 5. TRAINING OVERLAY (SOPRA LA NAVBAR)
         if (trainingState == TrainingState.RUNNING || trainingState == TrainingState.PAUSED) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .padding(bottom = bottomObstructionHeight + 8.dp)
+                    .padding(horizontal = navBarHorizontalMargin)
             ) {
                 TrainingOverlay(
                     trainingState = trainingState,
@@ -469,13 +462,13 @@ fun HomeScreen(
                     onResumeClick = { viewModel.onResumeTraining() },
                     onStopClick = {
                         viewModel.onStopTraining()
-                        navigationCamera?.requestNavigationCameraToOverview() // Return to 2d view when stopping workout
-
+                        navigationCamera?.requestNavigationCameraToOverview()
                     }
                 )
             }
         }
 
+        // ... (Popup logic unchanged) ...
         if (showMapClickDialog) {
             Box(
                 modifier = Modifier
@@ -487,12 +480,10 @@ fun HomeScreen(
                         })
                     }
             )
-
             clickedScreenCoordinate?.let {
                 val x = with(density) { it.x.toFloat().toDp() }
                 val y = with(density) { it.y.toFloat().toDp() }
                 var popupSize by remember { mutableStateOf(IntSize.Zero) }
-
                 Box(
                     Modifier
                         .onSizeChanged { popupSize = it }
@@ -500,7 +491,7 @@ fun HomeScreen(
                             x = x - with(density) { (popupSize.width / 2).toDp() },
                             y = y - with(density) { popupSize.height.toDp() } - 16.dp
                         )
-                        .pointerInput(Unit) { detectTapGestures() } // Consume taps on the popup
+                        .pointerInput(Unit) { detectTapGestures() }
                 ) {
                     MapClickPopup(
                         onConfirm = {
@@ -514,7 +505,7 @@ fun HomeScreen(
         }
     }
 }
-
+// ... MapClickPopup unchanged ...
 @Composable
 private fun MapClickPopup(
     modifier: Modifier = Modifier,
