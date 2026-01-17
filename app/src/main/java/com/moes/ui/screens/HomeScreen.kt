@@ -138,15 +138,15 @@ fun HomeScreen(
     }
 
     val livePace by produceState(
-        initialValue = "0:00",
+        initialValue = "--:--",
         key1 = liveTrainingSession,
         key2 = trainingState
     ) {
         while (trainingState == TrainingState.RUNNING) {
-            value = liveTrainingSession?.pace() ?: "0:00"
+            value = liveTrainingSession?.recentPace() ?: "--:--"
             delay(500)
         }
-        value = liveTrainingSession?.pace() ?: "0:00"
+        value = liveTrainingSession?.recentPace() ?: "--:--"
     }
 
     val context = LocalContext.current

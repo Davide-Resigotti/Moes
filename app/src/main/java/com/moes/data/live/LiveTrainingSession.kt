@@ -16,11 +16,19 @@ data class LiveTrainingSession(
     @SuppressLint("DefaultLocale")
     fun pace(): String {
         val dist = totalDistance()
-        if (dist == 0.0) return "0:00"
+        if (dist == 0.0) return "--:--"
         val secondsPerKm = (activeDuration() / 1000.0) / (dist / 1000.0)
         val min = (secondsPerKm / 60).toInt()
         val sec = (secondsPerKm % 60).toInt()
-        return String.format("%d:%02d", min, sec)
+        return String.format("%02d:%02d", min, sec)
+    }
+
+    fun recentPace(windowMillis: Long = 30_000L): String {
+        return segments.lastOrNull()?.recentPaceFromPoints(windowMillis) ?: "--:--"
+    }
+
+    fun averagePace(): String {
+        return segments.lastOrNull()?.averagePace() ?: "--:--"
     }
 }
 

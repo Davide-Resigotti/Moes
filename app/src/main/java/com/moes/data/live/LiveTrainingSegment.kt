@@ -33,4 +33,41 @@ data class LiveTrainingSegment(
         val c = 2 * atan2(sqrt(a), sqrt(1 - a))
         return R * c
     }
+
+    fun recentPaceFromPoints(windowMillis: Long = 30_000L): String {
+        if (coordinates.size < 2) return "--:--"
+
+        val now = System.currentTimeMillis()
+        val recentCoords = coordinates.filter {
+            now - it.timestamp <= windowMillis
+        }
+
+        if (recentCoords.size < 2) return "--:--"
+
+        val recentDistance = recentCoords.zipWithNext { c1, c2 ->
+            calculateDistance(c1, c2)
+        }.sum()
+
+        val durationSeconds = (recentCoords.last().timestamp - recentCoords.first().timestamp) / 1000.0
+        if (durationSeconds <= 0.1) return "--:--"
+
+        val paceMinPerKm = (durationSeconds / 60.0) / (recentDistance / 1000.0)
+
+        val minutes = paceMinPerKm.toInt()
+        val seconds = ((paceMinPerKm % 1) * 60).toInt()
+        return String.format("%02d:%02d", minutes, seconds)
+    }
+
+    // Pace medio totale segmento
+    fun averagePace(): String {
+        val totalDuration = duration() / 1000.0
+        if (totalDuration <= 0.1) return "--:--"
+
+        val totalDistKm = distance() / 1000.0
+        val paceMinPerKm = (totalDuration / 60.0) / totalDistKm
+
+        val minutes = paceMinPerKm.toInt()
+        val seconds = ((paceMinPerKm % 1) * 60).toInt()
+        return String.format("%02d:%02d", minutes, seconds)
+    }
 }
