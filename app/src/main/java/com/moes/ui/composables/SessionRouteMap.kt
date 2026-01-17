@@ -1,9 +1,29 @@
 package com.moes.ui.composables
 
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloseFullscreen
+import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.mapbox.geojson.Point
 import com.mapbox.maps.EdgeInsets
 import com.mapbox.maps.MapView
@@ -11,7 +31,10 @@ import com.mapbox.maps.Style
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.createPolylineAnnotationManager
+import com.mapbox.maps.plugin.attribution.attribution
+import com.mapbox.maps.plugin.compass.compass
 import com.mapbox.maps.plugin.gestures.gestures
+import com.mapbox.maps.plugin.scalebar.scalebar
 import com.moes.utils.PolylineUtils
 
 @Composable
@@ -19,26 +42,104 @@ fun SessionRouteMap(
     encodedGeometry: String,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
+    var isFullscreen by remember { mutableStateOf(false) }
 
-    // Decodifica la geometria usando la tua utility esistente
     val coordinates = remember(encodedGeometry) {
         PolylineUtils.decode(encodedGeometry).map { Point.fromLngLat(it.longitude, it.latitude) }
     }
 
+    // VERSIONE EMBEDDED
+    Box(modifier = modifier.clip(RoundedCornerShape(16.dp))) {
+        InternalMap(
+            coordinates = coordinates,
+            isInteractive = false,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        ExpandButton(
+            isFullscreen = false,
+            onClick = { isFullscreen = true },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        )
+    }
+
+    // VERSIONE FULLSCREEN
+    if (isFullscreen) {
+        Dialog(
+            onDismissRequest = { isFullscreen = false },
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false
+            )
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background
+            ) {
+                Box(Modifier.fillMaxSize()) {
+                    InternalMap(
+                        coordinates = coordinates,
+                        isInteractive = true,
+                        modifier = Modifier.fillMaxSize()
+                    )
+
+                    ExpandButton(
+                        isFullscreen = true,
+                        onClick = { isFullscreen = false },
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(24.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExpandButton(
+    isFullscreen: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    SmallFloatingActionButton(
+        onClick = onClick,
+        modifier = modifier,
+        shape = CircleShape,
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface
+    ) {
+        Icon(
+            imageVector = if (isFullscreen) Icons.Default.CloseFullscreen else Icons.Default.OpenInFull,
+            contentDescription = if (isFullscreen) "Riduci" else "Espandi"
+        )
+    }
+}
+
+@Composable
+private fun InternalMap(
+    coordinates: List<Point>,
+    isInteractive: Boolean,
+    modifier: Modifier
+) {
     AndroidView(
         modifier = modifier,
         factory = { ctx ->
             MapView(ctx).apply {
-                // Carica lo stile
                 mapboxMap.loadStyle(Style.OUTDOORS)
 
-                // Disabilita interazioni se vuoi solo visualizzare (opzionale)
+                scalebar.enabled = false
+                attribution.enabled = false
+                compass.enabled = false
+
                 gestures.updateSettings {
-                    scrollEnabled = true
-                    rotateEnabled = false
-                    pitchEnabled = false
-                    pinchToZoomEnabled = true
+                    scrollEnabled = isInteractive
+                    rotateEnabled = isInteractive
+                    pitchEnabled = isInteractive
+                    pinchToZoomEnabled = isInteractive
+                    doubleTapToZoomInEnabled = isInteractive
                 }
             }
         },
@@ -47,34 +148,26 @@ fun SessionRouteMap(
                 val annotationApi = mapView.annotations
                 val polylineManager = annotationApi.createPolylineAnnotationManager()
 
-                // Pulisci vecchie annotazioni per evitare duplicati
                 polylineManager.deleteAll()
 
-                // Disegna la linea
                 val polylineAnnotationOptions = PolylineAnnotationOptions()
                     .withPoints(coordinates)
-                    .withLineColor("#F59B23") // Tuo colore Orange
+                    .withLineColor("#F59B23")
                     .withLineWidth(5.0)
 
                 polylineManager.create(polylineAnnotationOptions)
 
-                // FIX FONDAMENTALE: Usiamo .post {}
-                // Questo assicura che il calcolo avvenga DOPO che la view ha dimensioni reali.
                 mapView.post {
-                    // Padding: Margine dai bordi (sx, alto, dx, basso) in pixel.
-                    // Aumentato a 100.0 per evitare che la linea tocchi i bordi o finisca sotto le barre.
-                    val padding = EdgeInsets(100.0, 100.0, 100.0, 100.0)
-
-                    // FIX DEPRECATION: Passiamo esplicitamente bearing e pitch a 0.0
-                    // Mapbox ora richiede questi parametri per evitare ambiguità.
+                    val paddingValue = if (isInteractive) 150.0 else 50.0
+                    val padding = EdgeInsets(
+                        paddingValue, paddingValue, paddingValue, paddingValue
+                    )
                     val cameraPosition = mapView.mapboxMap.cameraForCoordinates(
                         coordinates,
                         padding,
-                        0.0, // Bearing (Rotazione)
-                        0.0  // Pitch (Inclinazione)
+                        0.0,
+                        0.0
                     )
-
-                    // Applica la camera calcolata
                     mapView.mapboxMap.setCamera(cameraPosition)
                 }
             }

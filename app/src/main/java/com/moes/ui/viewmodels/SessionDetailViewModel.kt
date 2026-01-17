@@ -23,39 +23,32 @@ class SessionDetailViewModel(
         }
     }
 
-    fun saveTitle(newTitle: String, onComplete: () -> Unit) {
+    fun updateTitleSilently(newTitle: String) {
         val currentSession = _session.value ?: return
         val trimmedTitle = newTitle.trim()
 
-        if (currentSession.title == trimmedTitle) {
-            onComplete()
-            return
-        }
+        if (currentSession.title == trimmedTitle) return
 
         viewModelScope.launch {
             try {
                 databaseRepository.updateSessionTitle(currentSession.id, trimmedTitle)
                 _session.value = currentSession.copy(title = trimmedTitle)
                 databaseRepository.syncPendingSessions()
-            } catch (_: Exception) {
-            } finally {
-                // Assicura che la navigazione avvenga comunque
-                onComplete()
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
 
     fun deleteSession(onComplete: () -> Unit) {
-        // Usiamo l'ID della sessione corrente, o usciamo se non c'è (caso raro)
         val currentSessionId = _session.value?.id ?: return
 
         viewModelScope.launch {
             try {
                 databaseRepository.deleteSession(currentSessionId)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                e.printStackTrace()
             } finally {
-                // FONDAMENTALE: Torna indietro SEMPRE, anche se c'è stato un errore o il DB era lento.
-                // Questo garantisce che l'utente non rimanga bloccato sulla schermata.
                 onComplete()
             }
         }
