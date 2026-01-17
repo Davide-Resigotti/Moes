@@ -3,11 +3,8 @@ package com.moes.ui.screens
 import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
@@ -18,7 +15,6 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -322,25 +318,24 @@ fun HomeScreen(
                     viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap).apply {
                         overviewPadding = with(density) {
                             EdgeInsets(
-                                100.dp.toPx().toDouble(),
-                                40.dp.toPx().toDouble(),
-                                100.dp.toPx().toDouble(),
-                                40.dp.toPx().toDouble()
+                                130.dp.toPx().toDouble(),
+                                24.dp.toPx().toDouble(),
+                                180.dp.toPx().toDouble(),
+                                24.dp.toPx().toDouble()
                             )
                         }
                         followingPadding = with(density) {
                             EdgeInsets(
-                                100.dp.toPx().toDouble(),
-                                40.dp.toPx().toDouble(),
-                                350.dp.toPx().toDouble(),
-                                40.dp.toPx().toDouble()
+                                130.dp.toPx().toDouble(),
+                                24.dp.toPx().toDouble(),
+                                320.dp.toPx().toDouble(),
+                                24.dp.toPx().toDouble()
                             )
                         }
                     }
 
                     viewportDataSource?.apply {
                         // IDLE / OVERVIEW: Zoom alto per vedere dove sono, ma non troppo lontano
-                        overviewZoomPropertyOverride(16.0)
                         overviewPitchPropertyOverride(0.0) // Mappa piatta (2D) in idle
 
                         // TRAINING / FOLLOWING: Zoom molto ravvicinato per vedere le svolte
@@ -429,53 +424,79 @@ fun HomeScreen(
         }
 
         // 3. LOCATION BUTTON (BIANCO E GRIGIO)
-        Column(
+        Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(bottom = buttonsBottomPadding, end = navBarHorizontalMargin),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(bottom = buttonsBottomPadding, end = navBarHorizontalMargin)
         ) {
-            // PULSANTE CLEAR ROUTE (X)
-            // Appare SOLO se c'è una rotta e non siamo in allenamento
-            if (navigationRoutes.isNotEmpty() && trainingState == TrainingState.IDLE) {
-                SmallFloatingActionButton(
+            // Condizione: C'è una rotta caricata e NON siamo in allenamento?
+            val showClearButton =
+                navigationRoutes.isNotEmpty() && trainingState == TrainingState.IDLE
+
+            if (showClearButton) {
+                // --- CASO 1: MOSTRA TASTO "CLEAR" (Rosso) ---
+                // Sostituisce il tasto location. Usiamo un FAB standard per mantenere la dimensione coerente.
+                FloatingActionButton(
                     onClick = {
+                        // 1. AZIONI DI PULIZIA ESISTENTI
                         viewModel.clearRoute()
                         viewportDataSource?.clearRouteData()
                         circleAnnotationManager?.deleteAll()
+
+                        // 2. NUOVA AZIONE: RICENTRA LA POSIZIONE
+                        val currentLoc = lastEnhancedLocation
+                        if (currentLoc != null) {
+                            mapViewState.value?.camera?.easeTo(
+                                CameraOptions.Builder()
+                                    .center(
+                                        Point.fromLngLat(
+                                            currentLoc.longitude,
+                                            currentLoc.latitude
+                                        )
+                                    )
+                                    .zoom(16.5) // Ripristina anche uno zoom comodo
+                                    .bearing(0.0) // Ripristina la rotazione a Nord (opzionale, ma pulito)
+                                    .build(),
+                            )
+                        }
+                        // Assicura che la camera di navigazione sappia che siamo in "Overview"
+                        navigationCamera?.requestNavigationCameraToOverview()
                     },
                     shape = CircleShape,
-                    containerColor = MaterialTheme.colorScheme.errorContainer, // Rosso/Errore
+                    containerColor = MaterialTheme.colorScheme.errorContainer, // Rosso
                     contentColor = MaterialTheme.colorScheme.onErrorContainer
                 ) {
                     Icon(Icons.Default.Close, contentDescription = "Clear Route")
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            // PULSANTE LOCATION (Sempre presente)
-            FloatingActionButton(
-                onClick = {
-                    val currentLoc = lastEnhancedLocation
-                    if (currentLoc != null) {
-                        mapViewState.value?.camera?.easeTo(
-                            CameraOptions.Builder()
-                                .center(Point.fromLngLat(currentLoc.longitude, currentLoc.latitude))
-                                .build(),
-                        )
-                    }
-                    if (trainingState == TrainingState.RUNNING || trainingState == TrainingState.PAUSED) {
-                        navigationCamera?.requestNavigationCameraToFollowing()
-                    } else {
-                        navigationCamera?.requestNavigationCameraToOverview()
-                    }
-                },
-                shape = CircleShape,
-                containerColor = Color.White,
-                contentColor = Color.Gray
-            ) {
-                Icon(imageVector = Icons.Default.NearMe, contentDescription = "My Location")
+            } else {
+                // --- CASO 2: MOSTRA TASTO "MY LOCATION" (Bianco) ---
+                FloatingActionButton(
+                    onClick = {
+                        val currentLoc = lastEnhancedLocation
+                        if (currentLoc != null) {
+                            mapViewState.value?.camera?.easeTo(
+                                CameraOptions.Builder()
+                                    .center(
+                                        Point.fromLngLat(
+                                            currentLoc.longitude,
+                                            currentLoc.latitude
+                                        )
+                                    )
+                                    .build(),
+                            )
+                        }
+                        if (trainingState == TrainingState.RUNNING || trainingState == TrainingState.PAUSED) {
+                            navigationCamera?.requestNavigationCameraToFollowing()
+                        } else {
+                            navigationCamera?.requestNavigationCameraToOverview()
+                        }
+                    },
+                    shape = CircleShape,
+                    containerColor = Color.White,
+                    contentColor = Color.Gray
+                ) {
+                    Icon(imageVector = Icons.Default.NearMe, contentDescription = "My Location")
+                }
             }
         }
 
