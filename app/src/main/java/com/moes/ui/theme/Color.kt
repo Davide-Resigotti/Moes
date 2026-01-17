@@ -2,17 +2,26 @@ package com.moes.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Primary App Color (Estratto dal Logo)
-val Orange = Color(0xFFFFA000) // Un arancione leggermente più acceso/ambra
-val OrangeLight = Color(0xFFFFD180) // Per sfondi o selezioni
+// --- LOGO PALETTE ---
+val BrandPrimary = Color(0xFFF06529)
+val BrandSecondary = Color(0xFFFFC107)
 
-// Dark Theme Palette
-val DarkGray = Color(0xFF121212)      // Background
-val DarkSurface = Color(0xFF1E1E1E)   // Surface
-val TextWhite = Color(0xFFFFFFFF)
+val LogoGradientStart = Color(0xFFFFA726)
+val LogoGradientEnd = Color(0xFFE64A19)
 
-// Light Theme Palette
-val White = Color(0xFFFFFFFF)         // Background
-val LightSurface = Color(0xFFF7F7F7)  // Surface
-val TextBlack = Color(0xFF000000)
-val TextGray = Color(0xFF8A8A8A)
+// --- MODERN UI BACKGROUNDS (LIGHT) ---
+val BackgroundModern = Color(0xFFF2F4F7)
+val SurfaceWhite = Color(0xFFFFFFFF)
+
+// --- MODERN UI BACKGROUNDS (DARK) ---
+val BackgroundDark = Color(0xFF111318)
+val SurfaceDark = Color(0xFF1F2229)
+
+// --- TEXT COLORS ---
+val TextBlack = Color(0xFF1D1F24)
+val TextGray = Color(0xFF636E72)
+val TextWhite = Color(0xFFF0F2F5)
+val TextGrayDark = Color(0xFF9DA5B4)
+
+// Functional
+val ErrorRed = Color(0xFFEA2027)

@@ -1,5 +1,6 @@
 package com.moes.ui.composables
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -20,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
@@ -124,11 +126,20 @@ private fun InternalMap(
     isInteractive: Boolean,
     modifier: Modifier
 ) {
+    val isDarkTheme = isSystemInDarkTheme()
+    val mapStyleUri = if (isDarkTheme) Style.DARK else Style.OUTDOORS
+
+    val primaryColor = MaterialTheme.colorScheme.primary
+
+    val primaryColorHex = remember(primaryColor) {
+        String.format("#%06X", (0xFFFFFF and primaryColor.toArgb()))
+    }
+
     AndroidView(
         modifier = modifier,
         factory = { ctx ->
             MapView(ctx).apply {
-                mapboxMap.loadStyle(Style.OUTDOORS)
+                mapboxMap.loadStyle(mapStyleUri)
 
                 scalebar.enabled = false
                 attribution.enabled = false
@@ -152,7 +163,7 @@ private fun InternalMap(
 
                 val polylineAnnotationOptions = PolylineAnnotationOptions()
                     .withPoints(coordinates)
-                    .withLineColor("#F59B23")
+                    .withLineColor(primaryColorHex)
                     .withLineWidth(5.0)
 
                 polylineManager.create(polylineAnnotationOptions)
