@@ -2,6 +2,7 @@ package com.moes.ui.screens
 
 import android.annotation.SuppressLint
 import android.util.Log
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,7 +27,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -95,10 +95,14 @@ fun HomeScreen(
     val trainingState by viewModel.trainingState.collectAsState()
     val liveTrainingSession by viewModel.liveTrainingSession.collectAsState()
     val finishedSessionId by viewModel.finishedSessionId.collectAsState()
+
     var instructionText by remember { mutableStateOf("") }
     var distanceText by remember { mutableStateOf("") }
     var maneuver by remember { mutableStateOf<Maneuver?>(null) }
     var lastEnhancedLocation by remember { mutableStateOf<Location?>(null) }
+
+    val isDarkTheme = isSystemInDarkTheme()
+    val mapStyleUri = if (isDarkTheme) Style.DARK else Style.OUTDOORS
 
     val liveDuration by produceState(
         initialValue = 0L,
@@ -145,6 +149,7 @@ fun HomeScreen(
         )
     }
     val mapboxNavigation = remember { MapboxNavigationProvider.retrieve() }
+
     val routeProgressObserver = remember {
         RouteProgressObserver { routeProgress ->
             viewportDataSource?.onRouteProgressChanged(routeProgress)
@@ -165,11 +170,11 @@ fun HomeScreen(
             )
         }
     }
+
     val locationObserver = remember(trainingState) {
         object : LocationObserver {
             var firstLocationReceived = false
 
-            // 1. GESTIONE RAW (IDLE)
             override fun onNewRawLocation(rawLocation: Location) {
                 if (trainingState == TrainingState.IDLE) {
                     lastEnhancedLocation = rawLocation
@@ -177,12 +182,10 @@ fun HomeScreen(
                         location = rawLocation,
                         keyPoints = emptyList()
                     )
-                    // In IDLE va bene usare easeTo per centrare all'inizio
                     updateCameraIfNeeded(rawLocation)
                 }
             }
 
-            // 2. GESTIONE MATCHED (TRAINING)
             override fun onNewLocationMatcherResult(locationMatcherResult: LocationMatcherResult) {
                 if (trainingState != TrainingState.IDLE) {
                     val enhanced = locationMatcherResult.enhancedLocation
@@ -214,12 +217,14 @@ fun HomeScreen(
             }
         }
     }
+
     LaunchedEffect(finishedSessionId) {
         finishedSessionId?.let { id ->
             onNavigateToSummary(id)
             viewModel.clearFinishedSessionEvent()
         }
     }
+
     LaunchedEffect(navigationRoutes) {
         if (navigationRoutes.isNotEmpty()) {
             mapboxNavigation.setNavigationRoutes(navigationRoutes)
@@ -243,25 +248,20 @@ fun HomeScreen(
             }
         }
     }
+
     LaunchedEffect(trainingState, mapViewState.value) {
         val map = mapViewState.value ?: return@LaunchedEffect
-
         map.location.apply {
             enabled = true
             puckBearingEnabled = true
-
-            if (trainingState == TrainingState.IDLE) {
-                // MODALITÀ IDLE:
-                // La freccia indica dove sei girato fisicamente (Bussola/Magnetometro)
-                puckBearing = PuckBearing.HEADING
+            puckBearing = if (trainingState == TrainingState.IDLE) {
+                PuckBearing.HEADING
             } else {
-                // MODALITÀ TRAINING:
-                // La freccia segue la direzione del movimento (GPS)
-                // Questo, combinato con la Camera "Following", fa ruotare la mappa
-                puckBearing = PuckBearing.COURSE
+                PuckBearing.COURSE
             }
         }
     }
+
     DisposableEffect(locationObserver) {
         mapboxNavigation.registerLocationObserver(locationObserver)
         mapboxNavigation.registerRouteProgressObserver(routeProgressObserver)
@@ -272,17 +272,16 @@ fun HomeScreen(
             mapboxNavigation.stopTripSession()
         }
     }
-    val keyboardController = LocalSoftwareKeyboardController.current
 
+    val keyboardController = LocalSoftwareKeyboardController.current
     val navBarHeight = 64.dp
     val navBarBottomMargin = 24.dp
     val navBarHorizontalMargin = 24.dp
     val bottomObstructionHeight = navBarHeight + navBarBottomMargin
 
-    // --- UI LAYOUT ---
     Box(Modifier.fillMaxSize()) {
 
-        // 1. MAPPA
+        // MAPPA
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
@@ -292,7 +291,7 @@ fun HomeScreen(
                     logo.enabled = false
                     attribution.enabled = false
 
-                    mapboxMap.loadStyle(Style.OUTDOORS)
+                    mapboxMap.loadStyle(mapStyleUri)
 
                     circleAnnotationManager = annotations.createCircleAnnotationManager()
                     mapboxMap.setCamera(CameraOptions.Builder().zoom(16.5).build())
@@ -327,22 +326,16 @@ fun HomeScreen(
                     }
 
                     viewportDataSource?.apply {
-                        // IDLE / OVERVIEW: Zoom alto per vedere dove sono, ma non troppo lontano
-                        overviewPitchPropertyOverride(0.0) // Mappa piatta (2D) in idle
-
-                        // TRAINING / FOLLOWING: Zoom molto ravvicinato per vedere le svolte
-                        followingZoomPropertyOverride(18.0) // Era 16.5, ora 18.0 (più vicino)
-                        followingPitchPropertyOverride(50.0) // Più inclinata per vedere "avanti" (3D)
+                        overviewPitchPropertyOverride(0.0)
+                        followingZoomPropertyOverride(18.0)
+                        followingPitchPropertyOverride(50.0)
                     }
 
                     navigationCamera = NavigationCamera(mapboxMap, camera, viewportDataSource!!)
 
                     mapboxMap.addOnMapLongClickListener { point ->
                         if (trainingState == TrainingState.IDLE) {
-                            // Pulisci vecchi marker
                             circleAnnotationManager?.deleteAll()
-
-                            // Aggiungi marker visivo
                             val circleAnnotationOptions = CircleAnnotationOptions()
                                 .withPoint(point)
                                 .withCircleRadius(8.0)
@@ -350,13 +343,11 @@ fun HomeScreen(
                                 .withCircleStrokeWidth(2.0)
                                 .withCircleStrokeColor("#ffffff")
                             circleAnnotationManager?.create(circleAnnotationOptions)
-
-                            // Richiedi SUBITO la rotta
                             viewModel.requestRouteToPoint(point)
                         }
                         true
                     }
-                    // ... (MoveListener uguale) ...
+
                     mapboxMap.addOnMoveListener(object : OnMoveListener {
                         override fun onMoveBegin(detector: MoveGestureDetector) {
                             navigationCamera?.requestNavigationCameraToIdle()
@@ -370,16 +361,12 @@ fun HomeScreen(
             update = {}
         )
 
-        // 2. SEARCH BAR / INSTRUCTIONS
+        // SEARCH BAR / INSTRUCTIONS
         Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .statusBarsPadding()
-                .padding(
-                    top = 16.dp,
-                    start = navBarHorizontalMargin, // 24.dp
-                    end = navBarHorizontalMargin    // 24.dp
-                )
+                .padding(top = 16.dp, start = navBarHorizontalMargin, end = navBarHorizontalMargin)
         ) {
             if (trainingState == TrainingState.IDLE) {
                 SearchBar(
@@ -409,27 +396,22 @@ fun HomeScreen(
             bottomObstructionHeight + trainingBannerHeightApprox + 16.dp
         }
 
-        // 3. LOCATION BUTTON (BIANCO E GRIGIO)
+        // LOCATION / CLEAR BUTTONS
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(bottom = buttonsBottomPadding, end = navBarHorizontalMargin)
         ) {
-            // Condizione: C'è una rotta caricata e NON siamo in allenamento?
             val showClearButton =
                 navigationRoutes.isNotEmpty() && trainingState == TrainingState.IDLE
 
             if (showClearButton) {
-                // --- CASO 1: MOSTRA TASTO "CLEAR" (Rosso) ---
-                // Sostituisce il tasto location. Usiamo un FAB standard per mantenere la dimensione coerente.
+                // CLEAR BUTTON
                 FloatingActionButton(
                     onClick = {
-                        // 1. AZIONI DI PULIZIA ESISTENTI
                         viewModel.clearRoute()
                         viewportDataSource?.clearRouteData()
                         circleAnnotationManager?.deleteAll()
-
-                        // 2. NUOVA AZIONE: RICENTRA LA POSIZIONE
                         val currentLoc = lastEnhancedLocation
                         if (currentLoc != null) {
                             mapViewState.value?.camera?.easeTo(
@@ -440,22 +422,19 @@ fun HomeScreen(
                                             currentLoc.latitude
                                         )
                                     )
-                                    .zoom(16.5) // Ripristina anche uno zoom comodo
-                                    .bearing(0.0) // Ripristina la rotazione a Nord (opzionale, ma pulito)
-                                    .build(),
+                                    .zoom(16.5).bearing(0.0).build(),
                             )
                         }
-                        // Assicura che la camera di navigazione sappia che siamo in "Overview"
                         navigationCamera?.requestNavigationCameraToOverview()
                     },
                     shape = CircleShape,
-                    containerColor = MaterialTheme.colorScheme.errorContainer, // Rosso
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
                     contentColor = MaterialTheme.colorScheme.onErrorContainer
                 ) {
                     Icon(Icons.Default.Close, contentDescription = "Clear Route")
                 }
             } else {
-                // --- CASO 2: MOSTRA TASTO "MY LOCATION" (Bianco) ---
+                // MY LOCATION BUTTON
                 FloatingActionButton(
                     onClick = {
                         val currentLoc = lastEnhancedLocation
@@ -478,15 +457,15 @@ fun HomeScreen(
                         }
                     },
                     shape = CircleShape,
-                    containerColor = Color.White,
-                    contentColor = Color.Gray
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ) {
                     Icon(imageVector = Icons.Default.NearMe, contentDescription = "My Location")
                 }
             }
         }
 
-        // 4. START BUTTON (CENTRATO)
+        // START BUTTON
         if (trainingState == TrainingState.IDLE) {
             Box(
                 modifier = Modifier
@@ -494,19 +473,17 @@ fun HomeScreen(
                     .padding(bottom = buttonsBottomPadding)
             ) {
                 FloatingActionButton(
-                    onClick = {
-                        viewModel.onStartTraining()
-                    },
+                    onClick = { viewModel.onStartTraining() },
                     shape = CircleShape,
                     containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = Color.White
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = "Start")
                 }
             }
         }
 
-        // 5. TRAINING OVERLAY (SOPRA LA NAVBAR)
+        // TRAINING OVERLAY
         if (trainingState == TrainingState.RUNNING || trainingState == TrainingState.PAUSED) {
             Box(
                 modifier = Modifier

@@ -22,10 +22,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.moes.data.TrainingState
-import java.util.concurrent.TimeUnit
+import com.moes.utils.FormatUtils
 
 @SuppressLint("DefaultLocale")
 @Composable
@@ -40,8 +39,8 @@ fun TrainingOverlay(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp), // Aumentato per effetto "Pillola" coerente con la Navbar
-        shadowElevation = 12.dp, // Stessa ombra della Navbar
+        shape = RoundedCornerShape(32.dp),
+        shadowElevation = 12.dp,
         color = MaterialTheme.colorScheme.surface
     ) {
         Column(
@@ -55,28 +54,13 @@ fun TrainingOverlay(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                StatItem(
-                    label = "Tempo",
-                    value = formatDurationShort(duration),
-                    isLarge = false
-                )
-
-                StatItem(
-                    label = "Passo (/km)",
-                    value = pace,
-                    isLarge = true
-                )
-
-                StatItem(
-                    label = "Km",
-                    value = String.format("%.2f", distance / 1000),
-                    isLarge = false
-                )
+                StatItem("Tempo", FormatUtils.formatDuration(duration), false)
+                StatItem("Passo (/km)", pace, true)
+                StatItem("Km", String.format("%.2f", distance / 1000), false)
             }
 
-            // RIGA PULSANTI
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Tasto STOP (Rosso/Errore)
+                // STOP
                 Button(
                     onClick = onStopClick,
                     colors = ButtonDefaults.buttonColors(
@@ -91,15 +75,20 @@ fun TrainingOverlay(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // Tasto PAUSE/RESUME (Arancione/Primary)
+                // PAUSE/RESUME
+                val actionButtonColors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+
                 if (trainingState == TrainingState.RUNNING) {
-                    Button(onClick = onPauseClick) {
+                    Button(onClick = onPauseClick, colors = actionButtonColors) {
                         Icon(Icons.Default.Face, contentDescription = "Pause")
                         Spacer(Modifier.width(8.dp))
                         Text("Pausa")
                     }
                 } else if (trainingState == TrainingState.PAUSED) {
-                    Button(onClick = onResumeClick) {
+                    Button(onClick = onResumeClick, colors = actionButtonColors) {
                         Icon(Icons.Default.PlayArrow, contentDescription = "Resume")
                         Spacer(Modifier.width(8.dp))
                         Text("Riprendi")
@@ -115,11 +104,7 @@ private fun StatItem(label: String, value: String, isLarge: Boolean) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = value,
-            style = if (isLarge) {
-                MaterialTheme.typography.headlineMedium
-            } else {
-                MaterialTheme.typography.titleLarge
-            },
+            style = if (isLarge) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
@@ -127,18 +112,5 @@ private fun StatItem(label: String, value: String, isLarge: Boolean) {
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-    }
-}
-
-@SuppressLint("DefaultLocale")
-private fun formatDurationShort(millis: Long): String {
-    val hours = TimeUnit.MILLISECONDS.toHours(millis)
-    val minutes = TimeUnit.MILLISECONDS.toMinutes(millis) % 60
-    val seconds = TimeUnit.MILLISECONDS.toSeconds(millis) % 60
-
-    return if (hours > 0) {
-        String.format("%02d:%02d", hours, minutes)
-    } else {
-        String.format("%02d:%02d", minutes, seconds)
     }
 }

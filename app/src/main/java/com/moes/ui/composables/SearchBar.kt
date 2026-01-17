@@ -62,7 +62,7 @@ fun SearchBar(
     }
 
     Column(modifier = modifier) {
-        // BARRA DI RICERCA A PILLOLA
+        // BARRA DI RICERCA
         Surface(
             shape = CircleShape,
             shadowElevation = 8.dp,
@@ -86,7 +86,8 @@ fun SearchBar(
                     placeholder = {
                         Text(
                             "Dove vuoi andare?",
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
                     modifier = Modifier.weight(1f),
@@ -97,6 +98,9 @@ fun SearchBar(
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary
                     ),
                     singleLine = true
                 )
@@ -113,14 +117,15 @@ fun SearchBar(
             }
         }
 
-        // SUGGERIMENTI MIGLIORATI
+        // RISULTATI DI RICERCA
         if (suggestions.isNotEmpty()) {
             Surface(
                 modifier = Modifier
                     .padding(top = 8.dp)
                     .fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                shadowElevation = 4.dp
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
             ) {
                 LazyColumn(
                     modifier = Modifier.padding(vertical = 8.dp)
@@ -136,7 +141,6 @@ fun SearchBar(
                                 .padding(vertical = 12.dp, horizontal = 20.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Icona Pin piccola per ogni risultato
                             Icon(
                                 imageVector = Icons.Default.LocationOn,
                                 contentDescription = null,
@@ -144,19 +148,16 @@ fun SearchBar(
                                 modifier = Modifier.padding(end = 16.dp)
                             )
 
-                            // Testo su due righe: Nome e Indirizzo
                             Column {
-                                // 1. NOME (es. Via Roma)
                                 Text(
                                     text = suggestion.name,
                                     style = MaterialTheme.typography.bodyLarge,
                                     fontWeight = FontWeight.SemiBold,
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                    overflow = TextOverflow.Ellipsis,
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
 
-                                // 2. INDIRIZZO COMPLETO (es. Milano, MI, Italia)
-                                // Mapbox fornisce l'indirizzo formattato o la descrizione
                                 val addressText = suggestion.address?.formattedAddress()
                                     ?: suggestion.descriptionText
                                 if (!addressText.isNullOrBlank()) {

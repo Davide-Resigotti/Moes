@@ -32,7 +32,21 @@ object FormatUtils {
 
     @SuppressLint("DefaultLocale")
     fun formatDistance(meters: Double): String {
+        if (meters <= 1000)
+            return "${meters.toInt()} m"
+
         return String.format("%.2f km", meters / 1000)
+    }
+
+    fun formatRawDistance(rawMeters: String): String {
+        return try {
+            val dist = rawMeters.toDoubleOrNull()
+            if (dist != null) {
+                formatDistance(dist)
+            } else rawMeters
+        } catch (e: Exception) {
+            rawMeters
+        }
     }
 
     @SuppressLint("DefaultLocale")
