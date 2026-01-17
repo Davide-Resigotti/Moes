@@ -43,6 +43,7 @@ import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.EdgeInsets
 import com.mapbox.maps.MapView
+import com.mapbox.maps.Style
 import com.mapbox.maps.plugin.PuckBearing
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.annotation.annotations
@@ -168,26 +169,57 @@ fun HomeScreen(
             )
         }
     }
-    val locationObserver = remember {
+    val locationObserver = remember(trainingState) {
         object : LocationObserver {
             var firstLocationReceived = false
-            override fun onNewRawLocation(rawLocation: Location) {}
+
+            // 1. GESTIONE RAW (GPS Puro) -> Usata in IDLE
+            override fun onNewRawLocation(rawLocation: Location) {
+                if (trainingState == TrainingState.IDLE) {
+                    // Salviamo la posizione per il tasto "My Location"
+                    lastEnhancedLocation = rawLocation
+
+                    // Passiamo la posizione GREZZA al provider.
+                    // Questo sblocca il puck dalla strada e abilita la bussola reale.
+                    navigationLocationProvider.changePosition(
+                        location = rawLocation,
+                        keyPoints = emptyList() // Nessun punto di aggancio
+                    )
+
+                    // Aggiorniamo la camera se serve (es. prima volta)
+                    updateCameraIfNeeded(rawLocation)
+                }
+            }
+
+            // 2. GESTIONE MATCHED (Agganciata alla strada) -> Usata in TRAINING
             override fun onNewLocationMatcherResult(locationMatcherResult: LocationMatcherResult) {
-                val enhanced = locationMatcherResult.enhancedLocation
-                lastEnhancedLocation = enhanced
-                navigationLocationProvider.changePosition(
-                    location = enhanced,
-                    keyPoints = locationMatcherResult.keyPoints
-                )
-                viewportDataSource?.onLocationChanged(enhanced)
-                viewportDataSource?.evaluate()
+                if (trainingState != TrainingState.IDLE) {
+                    val enhanced = locationMatcherResult.enhancedLocation
+                    lastEnhancedLocation = enhanced
+
+                    // Passiamo la posizione AGGANCIATA al provider.
+                    // Utile per seguire la linea blu della rotta senza "saltellare".
+                    navigationLocationProvider.changePosition(
+                        location = enhanced,
+                        keyPoints = locationMatcherResult.keyPoints
+                    )
+
+                    // Aggiorniamo viewport e camera
+                    viewportDataSource?.onLocationChanged(enhanced)
+                    viewportDataSource?.evaluate()
+
+                    updateCameraIfNeeded(enhanced)
+                }
+            }
+
+            private fun updateCameraIfNeeded(location: Location) {
                 if (!firstLocationReceived) {
                     firstLocationReceived = true
                     mapViewState.value?.camera?.easeTo(
                         CameraOptions.Builder()
-                            .center(Point.fromLngLat(enhanced.longitude, enhanced.latitude))
-                            .bearing(enhanced.bearing)
-                            .zoom(16.0)
+                            .center(Point.fromLngLat(location.longitude, location.latitude))
+                            .bearing(location.bearing)
+                            .zoom(16.5)
                             .build()
                     )
                 }
@@ -223,7 +255,26 @@ fun HomeScreen(
             }
         }
     }
-    DisposableEffect(Unit) {
+    LaunchedEffect(trainingState, mapViewState.value) {
+        val map = mapViewState.value ?: return@LaunchedEffect
+
+        map.location.apply {
+            enabled = true
+            puckBearingEnabled = true
+
+            if (trainingState == TrainingState.IDLE) {
+                // MODALITÀ IDLE:
+                // La freccia indica dove sei girato fisicamente (Bussola/Magnetometro)
+                puckBearing = PuckBearing.HEADING
+            } else {
+                // MODALITÀ TRAINING:
+                // La freccia segue la direzione del movimento (GPS)
+                // Questo, combinato con la Camera "Following", fa ruotare la mappa
+                puckBearing = PuckBearing.COURSE
+            }
+        }
+    }
+    DisposableEffect(locationObserver) {
         mapboxNavigation.registerLocationObserver(locationObserver)
         mapboxNavigation.registerRouteProgressObserver(routeProgressObserver)
         mapboxNavigation.startTripSession()
@@ -253,15 +304,17 @@ fun HomeScreen(
                     logo.enabled = false
                     attribution.enabled = false
 
+                    mapboxMap.loadStyle(Style.OUTDOORS)
+
                     circleAnnotationManager = annotations.createCircleAnnotationManager()
-                    mapboxMap.setCamera(CameraOptions.Builder().zoom(16.0).build())
+                    mapboxMap.setCamera(CameraOptions.Builder().zoom(16.5).build())
 
                     location.apply {
                         setLocationProvider(navigationLocationProvider)
                         locationPuck = createDefault2DPuck(withBearing = true)
                         enabled = true
                         puckBearingEnabled = true
-                        puckBearing = PuckBearing.COURSE
+                        puckBearing = PuckBearing.HEADING
                     }
 
                     mapViewState.value = this
@@ -284,9 +337,16 @@ fun HomeScreen(
                             )
                         }
                     }
-                    viewportDataSource?.overviewPitchPropertyOverride(0.0)
-                    viewportDataSource?.followingPitchPropertyOverride(45.0)
-                    viewportDataSource?.followingZoomPropertyOverride(16.5)
+
+                    viewportDataSource?.apply {
+                        // IDLE / OVERVIEW: Zoom alto per vedere dove sono, ma non troppo lontano
+                        overviewZoomPropertyOverride(16.0)
+                        overviewPitchPropertyOverride(0.0) // Mappa piatta (2D) in idle
+
+                        // TRAINING / FOLLOWING: Zoom molto ravvicinato per vedere le svolte
+                        followingZoomPropertyOverride(18.0) // Era 16.5, ora 18.0 (più vicino)
+                        followingPitchPropertyOverride(50.0) // Più inclinata per vedere "avanti" (3D)
+                    }
 
                     navigationCamera = NavigationCamera(mapboxMap, camera, viewportDataSource!!)
 
