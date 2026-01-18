@@ -96,8 +96,8 @@ fun HomeScreen(
     val liveTrainingSession by viewModel.liveTrainingSession.collectAsState()
     val finishedSessionId by viewModel.finishedSessionId.collectAsState()
 
-    var instructionText by remember { mutableStateOf("") }
-    var distanceText by remember { mutableStateOf("") }
+    var instructionText by remember { mutableStateOf("Ricerca percorso...") }
+    var distanceText by remember { mutableStateOf("0") }
     var maneuver by remember { mutableStateOf<Maneuver?>(null) }
     var lastEnhancedLocation by remember { mutableStateOf<Location?>(null) }
 
@@ -165,8 +165,9 @@ fun HomeScreen(
                 },
                 { maneuverList ->
                     maneuver = maneuverList.firstOrNull()
-                    instructionText = maneuver?.primary?.text ?: "Follow Route"
-                    distanceText = maneuver?.stepDistance?.distanceRemaining.toString()
+                    instructionText = maneuver?.primary?.text ?: "Segui la rotta"
+                    val dist = maneuver?.stepDistance?.distanceRemaining
+                    distanceText = dist?.toString() ?: "0"
                 })
         }
     }
@@ -431,10 +432,10 @@ fun HomeScreen(
                         if (currentLoc != null) {
                             mapViewState.value?.camera?.easeTo(
                                 CameraOptions.Builder().center(
-                                        Point.fromLngLat(
-                                            currentLoc.longitude, currentLoc.latitude
-                                        )
-                                    ).zoom(16.5).bearing(0.0).build(),
+                                    Point.fromLngLat(
+                                        currentLoc.longitude, currentLoc.latitude
+                                    )
+                                ).zoom(16.5).bearing(0.0).build(),
                             )
                         }
                         navigationCamera?.requestNavigationCameraToOverview()
@@ -458,10 +459,10 @@ fun HomeScreen(
 
                             mapViewState.value?.camera?.easeTo(
                                 CameraOptions.Builder().center(
-                                        Point.fromLngLat(
-                                            currentLoc.longitude, currentLoc.latitude
-                                        )
-                                    ).build(),
+                                    Point.fromLngLat(
+                                        currentLoc.longitude, currentLoc.latitude
+                                    )
+                                ).build(),
                             )
                         }
                         if (trainingState == TrainingState.RUNNING || trainingState == TrainingState.PAUSED) {
