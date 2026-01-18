@@ -3,6 +3,7 @@ package com.moes.ui.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.moes.data.TrainingSession
+import com.moes.data.UserProfile
 import com.moes.repositories.DatabaseRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,10 +17,19 @@ class SessionDetailViewModel(
     private val _session = MutableStateFlow<TrainingSession?>(null)
     val session: StateFlow<TrainingSession?> = _session.asStateFlow()
 
+    private val _userProfile = MutableStateFlow<UserProfile?>(null)
+    val userProfile: StateFlow<UserProfile?> = _userProfile.asStateFlow()
+
     fun loadSession(sessionId: String) {
         viewModelScope.launch {
             val result = databaseRepository.getSessionById(sessionId)
             _session.value = result
+
+            result?.let { session ->
+                databaseRepository.getUserProfile(session.userId).collect { profile ->
+                    _userProfile.value = profile
+                }
+            }
         }
     }
 

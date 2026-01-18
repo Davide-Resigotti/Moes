@@ -53,6 +53,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.moes.ui.composables.SessionRouteMap
 import com.moes.ui.viewmodels.SessionDetailViewModel
 import com.moes.ui.viewmodels.ViewModelFactory
+import com.moes.utils.CaloriesCalculator
 import com.moes.utils.FormatUtils
 import kotlinx.coroutines.delay
 
@@ -68,6 +69,8 @@ fun SessionDetailScreen(
     }
 
     val session by viewModel.session.collectAsState()
+    val userProfile by viewModel.userProfile.collectAsState()
+
     var titleText by remember { mutableStateOf("") }
     var isInitialized by remember { mutableStateOf(false) }
 
@@ -88,48 +91,44 @@ fun SessionDetailScreen(
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
+        containerColor = MaterialTheme.colorScheme.background, topBar = {
             TopAppBar(
                 title = {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "Dettaglio Allenamento",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.weight(1f),
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Dettaglio Allenamento",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f),
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
 
-                        if (session != null) {
-                            Icon(
-                                imageVector = if (session!!.isSynced) Icons.Default.CloudDone else Icons.Default.CloudOff,
-                                contentDescription = "Sync Status",
-                                tint = if (session!!.isSynced) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                        }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    if (session != null) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onBackground
+                            imageVector = if (session!!.isSynced) Icons.Default.CloudDone else Icons.Default.CloudOff,
+                            contentDescription = "Sync Status",
+                            tint = if (session!!.isSynced) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(24.dp)
                         )
+                        Spacer(modifier = Modifier.width(16.dp))
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+                }
+            }, navigationIcon = {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+            }, colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.background
             )
-        }
-    ) { padding ->
+            )
+        }) { padding ->
         if (session == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
@@ -153,16 +152,14 @@ fun SessionDetailScreen(
                         .padding(horizontal = horizontalPadding)
                 ) {
                     SessionRouteMap(
-                        encodedGeometry = s.routeGeometry,
-                        modifier = Modifier.fillMaxSize()
+                        encodedGeometry = s.routeGeometry, modifier = Modifier.fillMaxSize()
                     )
                 }
 
                 Column(
                     modifier = Modifier
                         .padding(horizontal = horizontalPadding, vertical = 24.dp)
-                        .fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                        .fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // TEXTFIELD TITLE
                     Surface(
@@ -232,6 +229,13 @@ fun SessionDetailScreen(
                         value2 = FormatUtils.formatPace(s.avgPaceSeconds)
                     )
 
+                    if (userProfile != null) {
+                        val kCal = CaloriesCalculator.calculate(s, userProfile!!)
+                        FullWidthStatCard(
+                            label = "Calorie", mainText = kCal, subText = "Kcal"
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // BOTTONE ELIMINA
@@ -251,7 +255,6 @@ fun SessionDetailScreen(
                         Text("Elimina Allenamento", fontWeight = FontWeight.Bold)
                     }
 
-                    Spacer(modifier = Modifier.height(64.dp))
                 }
             }
         }
@@ -272,29 +275,20 @@ fun FullWidthStatCard(label: String, mainText: String, subText: String) {
             horizontalAlignment = Alignment.Start
         ) {
             Text(
-                text = label.uppercase(),
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.2.sp
-                ),
-                color = MaterialTheme.colorScheme.primary
+                text = label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp
+                ), color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = mainText,
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 24.sp
-                ),
-                color = MaterialTheme.colorScheme.onSurface
+                text = mainText, style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.Bold, fontSize = 24.sp
+                ), color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = subText,
-                style = MaterialTheme.typography.bodyLarge.copy(
+                text = subText, style = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = FontWeight.Medium
-                ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                ), color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -303,8 +297,7 @@ fun FullWidthStatCard(label: String, mainText: String, subText: String) {
 @Composable
 fun StatRow(label1: String, value1: String, label2: String, value2: String) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         StatCard(label1, value1, Modifier.weight(1f))
         StatCard(label2, value2, Modifier.weight(1f))
@@ -324,22 +317,15 @@ fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.Start
         ) {
             Text(
-                text = label.uppercase(),
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.2.sp
-                ),
-                color = MaterialTheme.colorScheme.primary
+                text = label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp
+                ), color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = value,
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp
-                ),
-                color = MaterialTheme.colorScheme.onSurface
+                text = value, style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.Bold, fontSize = 22.sp
+                ), color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
