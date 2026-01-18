@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SessionsViewModel(
@@ -16,19 +17,16 @@ class SessionsViewModel(
     private val databaseRepository: DatabaseRepository
 ) : ViewModel() {
 
-    // 1. Usiamo un Flow per tenere traccia dell'ID corrente dinamicamente
     private val _currentUserId = MutableStateFlow(authRepository.currentUserIdSafe)
 
     init {
-        // 2. Ascoltiamo i cambiamenti di stato (Login/Logout)
         authRepository.addAuthStateListener { _ ->
-            // Ogni volta che lo stato cambia, aggiorniamo l'ID
             _currentUserId.value = authRepository.currentUserIdSafe
         }
+
+        refreshData()
     }
 
-    // 3. FlatMapLatest: ogni volta che _currentUserId cambia,
-    // annulla la vecchia query e ne lancia una nuova con il nuovo ID.
     val sessions = _currentUserId.flatMapLatest { userId ->
         databaseRepository.getSessionsForUser(userId)
     }.stateIn(
@@ -36,4 +34,14 @@ class SessionsViewModel(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
     )
+
+    fun refreshData() {
+        viewModelScope.launch {
+            val userId = authRepository.currentUserIdSafe
+            if (userId != AuthRepository.GUEST_ID) {
+                databaseRepository.syncPendingSessions()
+                databaseRepository.syncFromCloud(userId)
+            }
+        }
+    }
 }

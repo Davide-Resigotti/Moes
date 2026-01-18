@@ -29,7 +29,6 @@ class DatabaseRepository(
                 firestoreDataSource.saveSession(session)
                 trainingDao.markAsSynced(session.id)
             } catch (e: Exception) {
-                e.printStackTrace()
             }
         }
     }
@@ -44,7 +43,6 @@ class DatabaseRepository(
                 firestoreDataSource.saveSession(session)
                 trainingDao.markAsSynced(id)
             } catch (e: Exception) {
-                e.printStackTrace()
             }
         }
     }
@@ -79,36 +77,6 @@ class DatabaseRepository(
         }
     }
 
-    suspend fun migrateGuestData(realUserId: String) {
-        withContext(Dispatchers.IO) {
-            trainingDao.migrateGuestSessionsToUser(realUserId)
-
-            userDao.migrateGuestProfile(realUserId)
-
-            val localProfile = userDao.getUserProfile(realUserId).firstOrNull()
-
-            try {
-                val remoteProfile = firestoreDataSource.getUserProfile(realUserId)
-
-                if (remoteProfile == null) {
-                    if (localProfile != null) {
-                        firestoreDataSource.saveUserProfile(localProfile)
-                    }
-                } else {
-                    if (localProfile != null && localProfile.lastEdited > remoteProfile.lastEdited) {
-                        firestoreDataSource.saveUserProfile(localProfile)
-                    } else {
-                        userDao.saveUserProfile(remoteProfile)
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-
-            syncPendingSessions()
-        }
-    }
-
     suspend fun syncPendingSessions() {
         val unsyncedSessions = trainingDao.getUnsyncedSessions()
         if (unsyncedSessions.isEmpty()) return
@@ -131,10 +99,19 @@ class DatabaseRepository(
     }
 
     suspend fun syncFromCloud(userId: String) {
+        if (userId == AuthRepository.GUEST_ID) return
+
         try {
+            syncPendingSessions()
+
+            val dirtySessionsIds = trainingDao.getUnsyncedSessions().map { it.id }.toSet()
+
             val remoteSessions = firestoreDataSource.getSessions(userId)
+
             remoteSessions.forEach { session ->
-                trainingDao.insertSession(session)
+                if (session.id !in dirtySessionsIds) {
+                    trainingDao.insertSession(session)
+                }
             }
 
             val remoteProfile = firestoreDataSource.getUserProfile(userId)
@@ -147,6 +124,35 @@ class DatabaseRepository(
             }
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    suspend fun migrateGuestData(realUserId: String) {
+        withContext(Dispatchers.IO) {
+            trainingDao.migrateGuestSessionsToUser(realUserId)
+            userDao.migrateGuestProfile(realUserId)
+
+            var localProfile = userDao.getUserProfile(realUserId).firstOrNull()
+
+            try {
+                val remoteProfile = firestoreDataSource.getUserProfile(realUserId)
+                if (remoteProfile == null) {
+                    if (localProfile == null) {
+                        localProfile = UserProfile(userId = realUserId)
+                        userDao.saveUserProfile(localProfile)
+                    }
+                    firestoreDataSource.saveUserProfile(localProfile)
+                } else {
+                    if (localProfile != null && localProfile.lastEdited > remoteProfile.lastEdited) {
+                        firestoreDataSource.saveUserProfile(localProfile)
+                    } else {
+                        userDao.saveUserProfile(remoteProfile)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            syncPendingSessions()
         }
     }
 }

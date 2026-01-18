@@ -28,7 +28,6 @@ class FirestoreDataSource {
 
         return snapshot.documents.mapNotNull { doc ->
             try {
-                // Mappatura manuale aggiornata con TITLE
                 TrainingSession(
                     id = doc.getString("id") ?: "",
                     userId = doc.getString("userId") ?: userId,
