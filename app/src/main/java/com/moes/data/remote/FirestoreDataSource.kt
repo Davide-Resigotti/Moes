@@ -32,15 +32,14 @@ class FirestoreDataSource {
                     id = doc.getString("id") ?: "",
                     userId = doc.getString("userId") ?: userId,
 
-                    // MODIFICA QUI: Recupera il titolo o usa un default per i vecchi dati
                     title = doc.getString("title") ?: "Allenamento Recuperato",
-
                     startTime = doc.getLong("startTime") ?: 0L,
                     endTime = doc.getLong("endTime") ?: 0L,
                     durationMs = doc.getLong("durationMs") ?: 0L,
                     distanceMeters = doc.getDouble("distanceMeters") ?: 0.0,
                     routeGeometry = doc.getString("routeGeometry") ?: "",
-                    isSynced = true // Se arriva dal cloud, è già sincronizzato!
+                    isSynced = true,
+                    isDeleted = doc.getBoolean("isDeleted") ?: false
                 )
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -49,12 +48,12 @@ class FirestoreDataSource {
         }
     }
 
-    suspend fun deleteSession(userId: String, sessionId: String) {
+    suspend fun softDeleteSession(userId: String, sessionId: String) {
         db.collection("users")
             .document(userId)
             .collection("sessions")
             .document(sessionId)
-            .delete()
+            .update("isDeleted", true)
             .await()
     }
 }

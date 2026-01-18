@@ -15,7 +15,8 @@ data class TrainingSession(
     val distanceMeters: Double,
 
     val routeGeometry: String,
-    val isSynced: Boolean = false
+    val isSynced: Boolean = false,
+    val isDeleted: Boolean = false
 ) {
     val avgPaceSeconds: Double
         get() {

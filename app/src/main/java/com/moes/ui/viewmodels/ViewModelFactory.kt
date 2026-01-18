@@ -8,14 +8,13 @@ import com.moes.MoesApplication
 @Suppress("UNCHECKED_CAST")
 class ViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
 
-    // Recuperiamo l'applicazione per accedere ai Singleton
     private val app = context.applicationContext as MoesApplication
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(HomeScreenViewModel::class.java)) {
             return HomeScreenViewModel(
                 context = context,
-                trainingRepository = app.trainingRepository, // Usa l'istanza unica
+                trainingRepository = app.trainingRepository,
                 searchRepository = app.searchRepository,
                 navigationRepository = app.navigationRepository
             ) as T
@@ -37,6 +36,12 @@ class ViewModelFactory(private val context: Context) : ViewModelProvider.Factory
 
         if (modelClass.isAssignableFrom(SessionDetailViewModel::class.java)) {
             return SessionDetailViewModel(app.databaseRepository) as T
+        }
+
+        if (modelClass.isAssignableFrom(MissionsViewModel::class.java)) {
+            return MissionsViewModel(
+                app.gamificationRepository
+            ) as T
         }
 
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

@@ -7,6 +7,7 @@ import com.moes.data.local.AppDatabase
 import com.moes.data.remote.FirestoreDataSource
 import com.moes.repositories.AuthRepository
 import com.moes.repositories.DatabaseRepository
+import com.moes.repositories.GamificationRepository
 import com.moes.repositories.MapboxNavigationRepository
 import com.moes.repositories.MapboxSearchRepository
 import com.moes.repositories.TrainingRepository
@@ -20,6 +21,7 @@ class MoesApplication : Application() {
     lateinit var trainingRepository: TrainingRepository
     lateinit var searchRepository: MapboxSearchRepository
     lateinit var navigationRepository: MapboxNavigationRepository
+    lateinit var gamificationRepository: GamificationRepository
 
     override fun onCreate() {
         super.onCreate()
@@ -43,5 +45,6 @@ class MoesApplication : Application() {
 
         searchRepository = MapboxSearchRepository(this)
         navigationRepository = MapboxNavigationRepository()
+        gamificationRepository = GamificationRepository(database.trainingDao(), authRepository)
     }
 }

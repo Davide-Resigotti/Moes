@@ -1,6 +1,7 @@
 package com.moes.utils
 
 import android.annotation.SuppressLint
+import com.moes.data.missions.MissionType
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -60,5 +61,13 @@ object FormatUtils {
         val min = (secondsPerKm / 60).toInt()
         val sec = (secondsPerKm % 60).toInt()
         return String.format("%d:%02d /km", min, sec)
+    }
+
+    fun formatMissionValue(type: MissionType, value: Long): String {
+        return when (type) {
+            MissionType.COUNT -> "$value"
+            MissionType.DISTANCE -> "${(value / 1000)} km"
+            MissionType.DURATION -> "${value / 3600000} h"
+        }
     }
 }
