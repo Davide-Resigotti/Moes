@@ -26,12 +26,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.moes.data.UserProfile
+import com.moes.ui.theme.LogoGradientEnd
+import com.moes.ui.theme.LogoGradientStart
 
 @Composable
 fun UserProfileCard(
@@ -40,6 +46,12 @@ fun UserProfileCard(
     onMainActionClick: () -> Unit,
     onEdit: () -> Unit
 ) {
+    val initials = remember(profile.firstName, profile.lastName) {
+        val first = profile.firstName.take(1)
+        val last = profile.lastName.take(1)
+        if (first.isBlank() && last.isBlank()) "U" else (first + last).uppercase()
+    }
+
     Surface(
         shape = RoundedCornerShape(24.dp),
         shadowElevation = 2.dp,
@@ -48,22 +60,26 @@ fun UserProfileCard(
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // AVATAR
+
+                // AVATAR CON INIZIALI E GRADIENTE
                 Box(
                     modifier = Modifier
                         .size(64.dp)
                         .clip(CircleShape)
                         .background(
-                            if (isGuest) MaterialTheme.colorScheme.surfaceVariant
-                            else MaterialTheme.colorScheme.primaryContainer
+                            brush = Brush.linearGradient(
+                                colors = listOf(LogoGradientStart, LogoGradientEnd)
+                            )
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = profile.firstName.take(1).uppercase().ifBlank { "U" },
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = if (isGuest) MaterialTheme.colorScheme.onSurfaceVariant
-                        else MaterialTheme.colorScheme.onPrimaryContainer
+                        text = initials,
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        ),
+                        color = Color.White
                     )
                 }
 
@@ -85,7 +101,7 @@ fun UserProfileCard(
                             Icon(
                                 Icons.Default.CloudOff,
                                 contentDescription = null,
-                                modifier = Modifier.size(12.dp),
+                                modifier = Modifier.size(14.dp),
                                 tint = MaterialTheme.colorScheme.outline
                             )
                             Spacer(Modifier.width(4.dp))
@@ -108,10 +124,8 @@ fun UserProfileCard(
                 IconButton(
                     onClick = onMainActionClick,
                     colors = IconButtonDefaults.iconButtonColors(
-                        contentColor = if (isGuest) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                        containerColor = if (isGuest) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer.copy(
-                            alpha = 0.3f
-                        )
+                        containerColor = if (isGuest) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer,
+                        contentColor = if (isGuest) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
                     )
                 ) {
                     Icon(
@@ -139,7 +153,7 @@ fun UserProfileCard(
                     label = "ALTEZZA",
                     value = if (profile.heightCm > 0) "${profile.heightCm.toInt()} cm" else "--"
                 )
-                ProfileStat(label = "SESSO", value = profile.gender)
+                ProfileStat(label = "SESSO", value = profile.gender.ifBlank { "--" })
 
                 IconButton(onClick = onEdit) {
                     Icon(

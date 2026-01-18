@@ -50,15 +50,16 @@ class ProfileViewModel(
         gender: String
     ) {
         viewModelScope.launch {
-            val w = weight.toFloatOrNull() ?: 0f
-            val h = height.toFloatOrNull() ?: 0f
+            val w = weight.trim().toFloatOrNull() ?: 0f
+            val h = height.trim().toFloatOrNull() ?: 0f
+
             val activeUserId = currentUserId.value
             val currentProfile = userProfile.value
 
             val updatedProfile = currentProfile.copy(
                 userId = activeUserId,
-                firstName = firstName,
-                lastName = lastName,
+                firstName = firstName.trim(),
+                lastName = lastName.trim(),
                 weightKg = w,
                 heightCm = h,
                 gender = gender,
