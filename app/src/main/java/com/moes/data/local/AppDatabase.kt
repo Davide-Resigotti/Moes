@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import com.moes.data.TrainingSession
 import com.moes.data.UserProfile
 
-@Database(entities = [TrainingSession::class, UserProfile::class], version = 2)
+@Database(entities = [TrainingSession::class, UserProfile::class], version = 3)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun trainingDao(): TrainingDao
     abstract fun userDao(): UserDao

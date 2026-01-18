@@ -49,8 +49,8 @@ fun AccountScreen(
         EditProfileDialog(
             profile = userProfile,
             onDismiss = { showEditDialog = false },
-            onSave = { first, last, weight, height, gender ->
-                profileViewModel.saveProfile(first, last, weight, height, gender)
+            onSave = { first, last, weight, height, gender, birthDate ->
+                profileViewModel.saveProfile(first, last, weight, height, gender, birthDate)
                 showEditDialog = false
             }
         )

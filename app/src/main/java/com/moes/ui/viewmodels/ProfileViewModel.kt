@@ -47,7 +47,8 @@ class ProfileViewModel(
         lastName: String,
         weight: String,
         height: String,
-        gender: String
+        gender: String,
+        birthDate: Long
     ) {
         viewModelScope.launch {
             val w = weight.trim().toFloatOrNull() ?: 0f
@@ -63,6 +64,7 @@ class ProfileViewModel(
                 weightKg = w,
                 heightCm = h,
                 gender = gender,
+                birthDate = birthDate,
                 lastEdited = System.currentTimeMillis()
             )
             databaseRepository.saveUserProfile(updatedProfile)

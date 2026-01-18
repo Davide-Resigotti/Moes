@@ -78,12 +78,13 @@ class FirestoreDataSource {
             try {
                 UserProfile(
                     userId = userId,
+
                     firstName = snapshot.getString("firstName") ?: "",
                     lastName = snapshot.getString("lastName") ?: "",
                     weightKg = snapshot.getDouble("weightKg")?.toFloat() ?: 0f,
                     heightCm = snapshot.getDouble("heightCm")?.toFloat() ?: 0f,
                     gender = snapshot.getString("gender") ?: "M",
-                    birthYear = snapshot.getLong("birthYear")?.toInt() ?: 0,
+                    birthDate = snapshot.getLong("birthDate") ?: 0L,
                     lastEdited = snapshot.getLong("lastEdited") ?: 0L
                 )
             } catch (e: Exception) {

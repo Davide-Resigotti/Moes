@@ -87,8 +87,15 @@ fun UserProfileCard(
 
                 // INFO PRINCIPALI
                 Column(modifier = Modifier.weight(1f)) {
+                    val displayName =
+                        if (profile.firstName.isBlank() && profile.lastName.isBlank()) {
+                            "Ospite"
+                        } else {
+                            "${profile.firstName} ${profile.lastName}".trim()
+                        }
+
                     Text(
-                        text = if (profile.firstName.isBlank()) "Ospite" else profile.fullName,
+                        text = displayName,
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold
                         ),
