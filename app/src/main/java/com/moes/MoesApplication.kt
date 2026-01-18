@@ -14,7 +14,6 @@ import com.moes.repositories.TrainingRepository
 
 class MoesApplication : Application() {
 
-    // ISTANZE UNICHE (SINGLETON)
     lateinit var database: AppDatabase
     lateinit var authRepository: AuthRepository
     lateinit var databaseRepository: DatabaseRepository
@@ -26,26 +25,20 @@ class MoesApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        // 1. Mapbox
         MapboxNavigationProvider.create(
             NavigationOptions.Builder(this.applicationContext)
                 .build()
         )
 
-        // 2. Database & Auth
         database = AppDatabase.getDatabase(this)
         val firestoreDataSource = FirestoreDataSource()
-        authRepository = AuthRepository()
 
-        // 3. Repositories
+        authRepository = AuthRepository()
         databaseRepository =
             DatabaseRepository(database.trainingDao(), database.userDao(), firestoreDataSource)
-
-        // Questo è il punto critico: TrainingRepository creato UNA SOLA VOLTA
         trainingRepository = TrainingRepository(this, databaseRepository, authRepository)
-
         searchRepository = MapboxSearchRepository(this)
         navigationRepository = MapboxNavigationRepository()
-        gamificationRepository = GamificationRepository(database.trainingDao(), authRepository)
+        gamificationRepository = GamificationRepository(database.trainingDao())
     }
 }

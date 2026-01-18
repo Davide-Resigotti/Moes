@@ -16,8 +16,8 @@ fun AuthScreen(
     onLoginSuccess: () -> Unit,
     viewModel: AuthViewModel = viewModel(factory = ViewModelFactory(LocalContext.current))
 ) {
-    if (!viewModel.isAnonymous) {
-        LaunchedEffect(Unit) {
+    LaunchedEffect(Unit) {
+        viewModel.loginCompletedEvent.collect {
             onLoginSuccess()
         }
     }
