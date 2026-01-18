@@ -13,6 +13,7 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.moes.R
 import com.moes.data.Coordinate
 import com.moes.data.TrainingState
 import com.moes.data.live.LiveTrainingSegment
@@ -177,7 +178,7 @@ class LiveTrainingService : Service() {
         val notification =
             NotificationCompat.Builder(this, channelId).setContentTitle("Allenamento in corso")
                 .setContentText("Stiamo tracciando la tua posizione...")
-                .setSmallIcon(android.R.drawable.ic_dialog_map) // Icona generica, cambiala con la tua risorsa
+                .setSmallIcon(R.drawable.ic_notification)
                 .setOngoing(true) // Impedisce di cancellare la notifica swipeando
                 .build()
         startForeground(1, notification)
