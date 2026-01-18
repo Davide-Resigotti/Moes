@@ -20,13 +20,10 @@ class AuthViewModel(
     var error by mutableStateOf<String?>(null)
     var isLoading by mutableStateOf(false)
 
-    // Stato per decidere quale schermata mostrare
     var isAnonymous by mutableStateOf(authRepository.isUserAnonymous())
         private set
 
     init {
-        // AGGIUNGI QUESTO BLOCCO INIT
-        // Ascolta i cambiamenti di stato di Firebase in tempo reale
         authRepository.addAuthStateListener { isAnon ->
             isAnonymous = isAnon
         }
@@ -37,27 +34,9 @@ class AuthViewModel(
             error = "Inserisci email e password"
             return
         }
-
         viewModelScope.launch {
-            isLoading = true  // Inizia caricamento
-            error = null
-            try {
+            performAuthAction {
                 authRepository.linkWithEmail(email, password)
-                // Il listener nel blocco init aggiornerà isAnonymous automaticamente
-
-                val userId = authRepository.currentUserId
-                databaseRepository.migrateGuestData(userId)
-
-                databaseRepository.syncPendingSessions()
-            } catch (e: Exception) {
-                // Gestione errori comuni
-                error = if (e.message?.contains("already in use") == true) {
-                    "Email già registrata. Usa il pulsante Accedi."
-                } else {
-                    "Errore: ${e.message}"
-                }
-            } finally {
-                isLoading = false // Fine caricamento
             }
         }
     }
@@ -67,38 +46,51 @@ class AuthViewModel(
             error = "Inserisci email e password"
             return
         }
-
         viewModelScope.launch {
-            isLoading = true
-            error = null
-            try {
-                Log.d("AUTH_DEBUG", "1. Inizio Login...")
+            performAuthAction {
                 authRepository.signInWithEmail(email, password)
-                Log.d("AUTH_DEBUG", "2. Login Firebase completato!")
-
-                val userId = authRepository.currentUserId
-                Log.d("AUTH_DEBUG", "3. ID Utente recuperato: $userId")
-
-                // SE SI BLOCCA QUI: Il problema è il Database Room
-                databaseRepository.migrateGuestData(userId)
-                Log.d("AUTH_DEBUG", "4. Migrazione dati locali completata")
-
-                // SE SI BLOCCA QUI: Il problema è Firestore/Internet
-                databaseRepository.syncPendingSessions()
-                Log.d("AUTH_DEBUG", "5. Sync completato")
-
-                // 3. NUOVO: Scarica i dati storici dal Cloud al telefono
-                Log.d("AUTH_DEBUG", "Inizio download dati cloud...")
-                databaseRepository.syncFromCloud(userId)
-                Log.d("AUTH_DEBUG", "Download completato")
-
-            } catch (e: Exception) {
-                Log.e("AUTH_DEBUG", "ERRORE: ${e.message}")
-                error = "Login fallito: ${e.message}"
-            } finally {
-                isLoading = false
-                Log.d("AUTH_DEBUG", "6. Fine operazione (isLoading = false)")
             }
+        }
+    }
+
+    fun onGoogleSignIn(idToken: String) {
+        viewModelScope.launch {
+            performAuthAction {
+                authRepository.signInWithGoogle(idToken)
+            }
+        }
+    }
+
+    fun onGoogleSignInError(e: Exception) {
+        error = "Accesso con Google fallito. Riprova."
+    }
+
+    private suspend fun performAuthAction(action: suspend () -> Unit) {
+        isLoading = true
+        error = null
+        try {
+            action()
+            handleSuccessfulLogin()
+        } catch (e: Exception) {
+            handleAuthError(e)
+        } finally {
+            isLoading = false
+        }
+    }
+
+    private suspend fun handleSuccessfulLogin() {
+        val userId = authRepository.currentUserId
+        databaseRepository.migrateGuestData(userId)
+        databaseRepository.syncPendingSessions()
+        databaseRepository.syncFromCloud(userId)
+    }
+
+    private fun handleAuthError(e: Exception) {
+        Log.e("AUTH_ERROR", "Errore: ${e.message}")
+        error = if (e.message?.contains("already in use") == true) {
+            "Email già registrata. Usa il pulsante Accedi."
+        } else {
+            "Errore: ${e.message}"
         }
     }
 

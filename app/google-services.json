@@ -12,7 +12,20 @@
           "package_name": "com.moes"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "756626182923-if6er4smn999rd5qfr8lm7fil7cjg5q3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.moes",
+            "certificate_hash": "f07dade838176cb0f228b5efe300ca6a122b3791"
+          }
+        },
+        {
+          "client_id": "756626182923-q8vebdjb3ld5l9vpuu9q6f6sjbbu31kb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDz3FjBqqD0sIGenAFbejHFdYFqINEppz4"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "756626182923-q8vebdjb3ld5l9vpuu9q6f6sjbbu31kb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

@@ -64,6 +64,7 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("com.google.android.gms:play-services-auth:21.0.0")
     implementation("com.mapbox.maps:android-ndk27:11.16.1")
     implementation("com.mapbox.extension:maps-compose-ndk27:11.15.3")
     implementation("com.mapbox.search:mapbox-search-android-ndk27:2.16.1")
