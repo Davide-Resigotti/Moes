@@ -38,7 +38,8 @@ class MoesApplication : Application() {
         authRepository = AuthRepository()
 
         // 3. Repositories
-        databaseRepository = DatabaseRepository(database.trainingDao(), firestoreDataSource)
+        databaseRepository =
+            DatabaseRepository(database.trainingDao(), database.userDao(), firestoreDataSource)
 
         // Questo è il punto critico: TrainingRepository creato UNA SOLA VOLTA
         trainingRepository = TrainingRepository(this, databaseRepository, authRepository)

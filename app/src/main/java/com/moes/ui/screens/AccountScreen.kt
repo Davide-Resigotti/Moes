@@ -11,42 +11,51 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.moes.ui.composables.EditProfileDialog
 import com.moes.ui.composables.MissionCard
+import com.moes.ui.composables.UserProfileCard
 import com.moes.ui.viewmodels.MissionsViewModel
+import com.moes.ui.viewmodels.ProfileViewModel
 import com.moes.ui.viewmodels.ViewModelFactory
 
 @Composable
 fun AccountScreen(
     onLogout: () -> Unit = {},
-    missionsViewModel: MissionsViewModel = viewModel(factory = ViewModelFactory(LocalContext.current))
+    missionsViewModel: MissionsViewModel = viewModel(factory = ViewModelFactory(LocalContext.current)),
+    profileViewModel: ProfileViewModel = viewModel(factory = ViewModelFactory(LocalContext.current))
 ) {
     val missions by missionsViewModel.missions.collectAsState()
+    val userProfile by profileViewModel.userProfile.collectAsState()
+
+    var showEditDialog by remember { mutableStateOf(false) }
+
+    // DIALOG DI MODIFICA
+    if (showEditDialog) {
+        EditProfileDialog(
+            profile = userProfile,
+            onDismiss = { showEditDialog = false },
+            onSave = { first, last, weight, height, gender ->
+                profileViewModel.saveProfile(first, last, weight, height, gender)
+                showEditDialog = false
+            }
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -67,15 +76,27 @@ fun AccountScreen(
             // --- SEZIONE PROFILO ---
             item {
                 Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    text = "Profilo",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp, start = 4.dp),
-                    color = MaterialTheme.colorScheme.onBackground
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp, start = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Profilo",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
 
-                UserProfileCard(onLogout = onLogout)
+                // CARD PROFILO REALE
+                UserProfileCard(
+                    profile = userProfile,
+                    onLogout = onLogout,
+                    onEdit = { showEditDialog = true }
+                )
             }
 
             // --- SEZIONE MISSIONI ---
@@ -90,7 +111,6 @@ fun AccountScreen(
                 )
             }
 
-            // LISTA DINAMICA
             items(missions) { mission ->
                 MissionCard(progress = mission)
             }
@@ -99,66 +119,19 @@ fun AccountScreen(
 }
 
 @Composable
-fun UserProfileCard(onLogout: () -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(24.dp),
-        shadowElevation = 2.dp,
-        color = MaterialTheme.colorScheme.surface,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // AVATAR UTENTE (Placeholder)
-            Box(
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // NOME E INFO
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Il tuo Account",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "Sincronizzato sul Cloud",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            // TASTO LOGOUT
-            IconButton(
-                onClick = onLogout,
-                colors = IconButtonDefaults.iconButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error,
-                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Logout,
-                    contentDescription = "Logout"
-                )
-            }
-        }
+fun ProfileStat(label: String, value: String) {
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
