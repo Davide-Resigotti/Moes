@@ -28,6 +28,10 @@ class ProfileViewModel(
         }
     }
 
+    val isGuest: StateFlow<Boolean> = currentUserId.map { userId ->
+        userId == AuthRepository.GUEST_ID
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     val userProfile: StateFlow<UserProfile> = currentUserId.flatMapLatest { userId ->
         databaseRepository.getUserProfile(userId).map { profile ->
             profile ?: UserProfile(userId = userId)
@@ -48,9 +52,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             val w = weight.toFloatOrNull() ?: 0f
             val h = height.toFloatOrNull() ?: 0f
-
             val activeUserId = currentUserId.value
-
             val currentProfile = userProfile.value
 
             val updatedProfile = currentProfile.copy(
@@ -63,5 +65,9 @@ class ProfileViewModel(
             )
             databaseRepository.saveUserProfile(updatedProfile)
         }
+    }
+
+    fun logout() {
+        authRepository.signOut()
     }
 }
