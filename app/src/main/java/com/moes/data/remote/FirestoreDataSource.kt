@@ -2,6 +2,7 @@ package com.moes.data.remote
 
 import com.google.firebase.firestore.FirebaseFirestore
 import com.moes.data.TrainingSession
+import com.moes.data.UserProfile
 import kotlinx.coroutines.tasks.await
 
 class FirestoreDataSource {
@@ -55,5 +56,43 @@ class FirestoreDataSource {
             .document(sessionId)
             .update("isDeleted", true)
             .await()
+    }
+
+    suspend fun saveUserProfile(profile: UserProfile) {
+        db.collection("users")
+            .document(profile.userId)
+            .collection("data")
+            .document("profile")
+            .set(profile)
+            .await()
+    }
+
+    suspend fun getUserProfile(userId: String): UserProfile? {
+        val snapshot = db.collection("users")
+            .document(userId)
+            .collection("data")
+            .document("profile")
+            .get()
+            .await()
+
+        return if (snapshot.exists()) {
+            try {
+                UserProfile(
+                    userId = userId,
+                    firstName = snapshot.getString("firstName") ?: "",
+                    lastName = snapshot.getString("lastName") ?: "",
+                    weightKg = snapshot.getDouble("weightKg")?.toFloat() ?: 0f,
+                    heightCm = snapshot.getDouble("heightCm")?.toFloat() ?: 0f,
+                    gender = snapshot.getString("gender") ?: "M",
+                    birthYear = snapshot.getLong("birthYear")?.toInt() ?: 0,
+                    profilePictureUrl = snapshot.getString("profilePictureUrl")
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        } else {
+            null
+        }
     }
 }

@@ -1,14 +1,18 @@
 package com.moes.repositories
 
 import com.moes.data.TrainingSession
+import com.moes.data.UserProfile
 import com.moes.data.local.TrainingDao
+import com.moes.data.local.UserDao
 import com.moes.data.remote.FirestoreDataSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 
 class DatabaseRepository(
     private val trainingDao: TrainingDao,
+    private val userDao: UserDao,
     private val firestoreDataSource: FirestoreDataSource,
 ) {
     suspend fun saveTrainingSession(session: TrainingSession) {
@@ -45,9 +49,35 @@ class DatabaseRepository(
         trainingDao.updateSessionTitle(id, title)
     }
 
+    fun getUserProfile(userId: String): Flow<UserProfile?> {
+        return userDao.getUserProfile(userId)
+    }
+
+    suspend fun saveUserProfile(profile: UserProfile) {
+        userDao.saveUserProfile(profile)
+
+        if (profile.userId != "moes_guest_user") {
+            try {
+                firestoreDataSource.saveUserProfile(profile)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     suspend fun migrateGuestData(realUserId: String) {
         withContext(Dispatchers.IO) {
             trainingDao.migrateGuestSessionsToUser(realUserId)
+            userDao.migrateGuestProfile(realUserId)
+
+            val migratedProfile = userDao.getUserProfile(realUserId).firstOrNull()
+            if (migratedProfile != null) {
+                try {
+                    firestoreDataSource.saveUserProfile(migratedProfile)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
         }
     }
 
@@ -72,9 +102,13 @@ class DatabaseRepository(
     suspend fun syncFromCloud(userId: String) {
         try {
             val remoteSessions = firestoreDataSource.getSessions(userId)
-
             remoteSessions.forEach { session ->
                 trainingDao.insertSession(session)
+            }
+
+            val remoteProfile = firestoreDataSource.getUserProfile(userId)
+            if (remoteProfile != null) {
+                userDao.saveUserProfile(remoteProfile)
             }
         } catch (e: Exception) {
         }
