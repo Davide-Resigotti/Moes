@@ -56,7 +56,7 @@ class DatabaseRepository(
     suspend fun saveUserProfile(profile: UserProfile) {
         userDao.saveUserProfile(profile)
 
-        if (profile.userId != "moes_guest_user") {
+        if (profile.userId != AuthRepository.GUEST_ID) {
             try {
                 firestoreDataSource.saveUserProfile(profile)
             } catch (e: Exception) {
@@ -68,16 +68,20 @@ class DatabaseRepository(
     suspend fun migrateGuestData(realUserId: String) {
         withContext(Dispatchers.IO) {
             trainingDao.migrateGuestSessionsToUser(realUserId)
+
             userDao.migrateGuestProfile(realUserId)
 
-            val migratedProfile = userDao.getUserProfile(realUserId).firstOrNull()
-            if (migratedProfile != null) {
+            val localProfile = userDao.getUserProfile(realUserId).firstOrNull()
+
+            if (localProfile != null && (localProfile.firstName.isNotBlank() || localProfile.weightKg > 0)) {
                 try {
-                    firestoreDataSource.saveUserProfile(migratedProfile)
+                    firestoreDataSource.saveUserProfile(localProfile)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
             }
+
+            syncPendingSessions()
         }
     }
 
