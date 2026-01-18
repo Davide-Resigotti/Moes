@@ -72,7 +72,11 @@ fun MoesNavHost() {
     val navBarHorizontalMargin = 24.dp
     val navBarShape = CircleShape
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
 
         NavHost(
             navController = navController,
