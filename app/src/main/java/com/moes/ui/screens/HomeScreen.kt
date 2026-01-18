@@ -105,9 +105,7 @@ fun HomeScreen(
     val mapStyleUri = if (isDarkTheme) Style.DARK else Style.OUTDOORS
 
     val liveDuration by produceState(
-        initialValue = 0L,
-        key1 = liveTrainingSession,
-        key2 = trainingState
+        initialValue = 0L, key1 = liveTrainingSession, key2 = trainingState
     ) {
         while (trainingState == TrainingState.RUNNING) {
             value = liveTrainingSession?.activeDuration() ?: 0L
@@ -117,9 +115,7 @@ fun HomeScreen(
     }
 
     val livePace by produceState(
-        initialValue = "--:--",
-        key1 = liveTrainingSession,
-        key2 = trainingState
+        initialValue = "--:--", key1 = liveTrainingSession, key2 = trainingState
     ) {
         while (trainingState == TrainingState.RUNNING) {
             value = liveTrainingSession?.recentPace() ?: "--:--"
@@ -161,13 +157,17 @@ fun HomeScreen(
             }
             val maneuvers = maneuverApi.getManeuvers(routeProgress)
             maneuvers.fold(
-                { error -> Log.e("HomeScreen", "Maneuver Error: ${'$'}{error.errorMessage}") },
+                { error ->
+                    Log.e(
+                        "HomeScreen",
+                        "Maneuver Error: ${'$'}{error.errorMessage}"
+                    )
+                },
                 { maneuverList ->
                     maneuver = maneuverList.firstOrNull()
                     instructionText = maneuver?.primary?.text ?: "Follow Route"
                     distanceText = maneuver?.stepDistance?.distanceRemaining.toString()
-                }
-            )
+                })
         }
     }
 
@@ -179,8 +179,7 @@ fun HomeScreen(
                 if (trainingState == TrainingState.IDLE) {
                     lastEnhancedLocation = rawLocation
                     navigationLocationProvider.changePosition(
-                        location = rawLocation,
-                        keyPoints = emptyList()
+                        location = rawLocation, keyPoints = emptyList()
                     )
                     updateCameraIfNeeded(rawLocation)
                 }
@@ -192,8 +191,7 @@ fun HomeScreen(
                     lastEnhancedLocation = enhanced
 
                     navigationLocationProvider.changePosition(
-                        location = enhanced,
-                        keyPoints = locationMatcherResult.keyPoints
+                        location = enhanced, keyPoints = locationMatcherResult.keyPoints
                     )
 
                     viewportDataSource?.onLocationChanged(enhanced)
@@ -209,9 +207,7 @@ fun HomeScreen(
                     mapViewState.value?.camera?.easeTo(
                         CameraOptions.Builder()
                             .center(Point.fromLngLat(location.longitude, location.latitude))
-                            .bearing(location.bearing)
-                            .zoom(16.5)
-                            .build()
+                            .bearing(location.bearing).zoom(16.5).build()
                     )
                 }
             }
@@ -270,7 +266,7 @@ fun HomeScreen(
     LaunchedEffect(navigationRoutes, trainingState, viewportDataSource) {
         val dataSource = viewportDataSource ?: return@LaunchedEffect
 
-        val bottomPadding = if (trainingState != TrainingState.IDLE && navigationRoutes.isEmpty()) {
+        val bottomPadding = if (trainingState != TrainingState.IDLE) {
             320.dp
         } else {
             180.dp
@@ -307,84 +303,78 @@ fun HomeScreen(
     Box(Modifier.fillMaxSize()) {
 
         // MAPPA
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { ctx ->
-                MapView(ctx).apply {
-                    compass.enabled = false
-                    scalebar.enabled = false
-                    logo.enabled = false
-                    attribution.enabled = false
+        AndroidView(modifier = Modifier.fillMaxSize(), factory = { ctx ->
+            MapView(ctx).apply {
+                compass.enabled = false
+                scalebar.enabled = false
+                logo.enabled = false
+                attribution.enabled = false
 
-                    mapboxMap.loadStyle(mapStyleUri)
+                mapboxMap.loadStyle(mapStyleUri)
 
-                    circleAnnotationManager = annotations.createCircleAnnotationManager()
-                    mapboxMap.setCamera(CameraOptions.Builder().zoom(16.5).build())
+                circleAnnotationManager = annotations.createCircleAnnotationManager()
+                mapboxMap.setCamera(CameraOptions.Builder().zoom(16.5).build())
 
-                    location.apply {
-                        setLocationProvider(navigationLocationProvider)
-                        locationPuck = createDefault2DPuck(withBearing = true)
-                        enabled = true
-                        puckBearingEnabled = true
-                        puckBearing = PuckBearing.HEADING
-                    }
-
-                    mapViewState.value = this
-
-                    viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap).apply {
-                        overviewPadding = with(density) {
-                            EdgeInsets(
-                                130.dp.toPx().toDouble(),
-                                24.dp.toPx().toDouble(),
-                                180.dp.toPx().toDouble(),
-                                24.dp.toPx().toDouble()
-                            )
-                        }
-                        followingPadding = with(density) {
-                            EdgeInsets(
-                                130.dp.toPx().toDouble(),
-                                24.dp.toPx().toDouble(),
-                                180.dp.toPx().toDouble(),
-                                24.dp.toPx().toDouble()
-                            )
-                        }
-                    }
-
-                    viewportDataSource?.apply {
-                        overviewPitchPropertyOverride(0.0)
-                        followingZoomPropertyOverride(16.5)
-                        followingPitchPropertyOverride(40.0)
-                    }
-
-                    navigationCamera = NavigationCamera(mapboxMap, camera, viewportDataSource!!)
-
-                    mapboxMap.addOnMapLongClickListener { point ->
-                        if (trainingState == TrainingState.IDLE) {
-                            circleAnnotationManager?.deleteAll()
-                            val circleAnnotationOptions = CircleAnnotationOptions()
-                                .withPoint(point)
-                                .withCircleRadius(8.0)
-                                .withCircleColor("#f06529")
-                                .withCircleStrokeWidth(2.0)
-                                .withCircleStrokeColor("#ffffff")
-                            circleAnnotationManager?.create(circleAnnotationOptions)
-                            viewModel.requestRouteToPoint(point)
-                        }
-                        true
-                    }
-
-                    mapboxMap.addOnMoveListener(object : OnMoveListener {
-                        override fun onMoveBegin(detector: MoveGestureDetector) {
-                            navigationCamera?.requestNavigationCameraToIdle()
-                        }
-
-                        override fun onMove(detector: MoveGestureDetector): Boolean = false
-                        override fun onMoveEnd(detector: MoveGestureDetector) {}
-                    })
+                location.apply {
+                    setLocationProvider(navigationLocationProvider)
+                    locationPuck = createDefault2DPuck(withBearing = true)
+                    enabled = true
+                    puckBearingEnabled = true
+                    puckBearing = PuckBearing.HEADING
                 }
-            },
-            update = {}
-        )
+
+                mapViewState.value = this
+
+                viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap).apply {
+                    overviewPadding = with(density) {
+                        EdgeInsets(
+                            130.dp.toPx().toDouble(),
+                            24.dp.toPx().toDouble(),
+                            180.dp.toPx().toDouble(),
+                            24.dp.toPx().toDouble()
+                        )
+                    }
+                    followingPadding = with(density) {
+                        EdgeInsets(
+                            130.dp.toPx().toDouble(),
+                            24.dp.toPx().toDouble(),
+                            180.dp.toPx().toDouble(),
+                            24.dp.toPx().toDouble()
+                        )
+                    }
+                }
+
+                viewportDataSource?.apply {
+                    overviewPitchPropertyOverride(0.0)
+                    followingZoomPropertyOverride(16.5)
+                    followingPitchPropertyOverride(40.0)
+                }
+
+                navigationCamera = NavigationCamera(mapboxMap, camera, viewportDataSource!!)
+
+                mapboxMap.addOnMapLongClickListener { point ->
+                    if (trainingState == TrainingState.IDLE) {
+                        circleAnnotationManager?.deleteAll()
+                        val circleAnnotationOptions =
+                            CircleAnnotationOptions().withPoint(point).withCircleRadius(8.0)
+                                .withCircleColor("#f06529").withCircleStrokeWidth(2.0)
+                                .withCircleStrokeColor("#ffffff")
+                        circleAnnotationManager?.create(circleAnnotationOptions)
+                        viewModel.requestRouteToPoint(point)
+                    }
+                    true
+                }
+
+                mapboxMap.addOnMoveListener(object : OnMoveListener {
+                    override fun onMoveBegin(detector: MoveGestureDetector) {
+                        navigationCamera?.requestNavigationCameraToIdle()
+                    }
+
+                    override fun onMove(detector: MoveGestureDetector): Boolean = false
+                    override fun onMoveEnd(detector: MoveGestureDetector) {}
+                })
+            }
+        }, update = {})
 
         // SEARCH BAR / INSTRUCTIONS
         Box(
@@ -440,14 +430,11 @@ fun HomeScreen(
                         val currentLoc = lastEnhancedLocation
                         if (currentLoc != null) {
                             mapViewState.value?.camera?.easeTo(
-                                CameraOptions.Builder()
-                                    .center(
+                                CameraOptions.Builder().center(
                                         Point.fromLngLat(
-                                            currentLoc.longitude,
-                                            currentLoc.latitude
+                                            currentLoc.longitude, currentLoc.latitude
                                         )
-                                    )
-                                    .zoom(16.5).bearing(0.0).build(),
+                                    ).zoom(16.5).bearing(0.0).build(),
                             )
                         }
                         navigationCamera?.requestNavigationCameraToOverview()
@@ -470,14 +457,11 @@ fun HomeScreen(
                             }
 
                             mapViewState.value?.camera?.easeTo(
-                                CameraOptions.Builder()
-                                    .center(
+                                CameraOptions.Builder().center(
                                         Point.fromLngLat(
-                                            currentLoc.longitude,
-                                            currentLoc.latitude
+                                            currentLoc.longitude, currentLoc.latitude
                                         )
-                                    )
-                                    .build(),
+                                    ).build(),
                             )
                         }
                         if (trainingState == TrainingState.RUNNING || trainingState == TrainingState.PAUSED) {
@@ -531,8 +515,7 @@ fun HomeScreen(
                     onStopClick = {
                         viewModel.onStopTraining()
                         navigationCamera?.requestNavigationCameraToOverview()
-                    }
-                )
+                    })
             }
         }
     }
