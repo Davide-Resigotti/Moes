@@ -15,38 +15,52 @@ class DatabaseRepository(
     private val userDao: UserDao,
     private val firestoreDataSource: FirestoreDataSource,
 ) {
-    suspend fun saveTrainingSession(session: TrainingSession) {
-        trainingDao.insertSession(session)
-
-        try {
-            firestoreDataSource.saveSession(session)
-            trainingDao.markAsSynced(session.id)
-        } catch (e: Exception) {
-            // Offline
-        }
-    }
-
-    suspend fun getSessionById(id: String): TrainingSession? = trainingDao.getSessionById(id)
-
     fun getSessionsForUser(userId: String): Flow<List<TrainingSession>> {
         return trainingDao.getSessionsForUser(userId)
     }
 
-    suspend fun deleteSession(id: String) {
-        val session = trainingDao.getSessionById(id)
+    suspend fun getSessionById(id: String): TrainingSession? = trainingDao.getSessionById(id)
 
-        if (session != null && session.isSynced) {
+    suspend fun saveTrainingSession(session: TrainingSession) {
+        trainingDao.insertSession(session)
+
+        if (session.userId != AuthRepository.GUEST_ID) {
             try {
-                firestoreDataSource.softDeleteSession(session.userId, id)
+                firestoreDataSource.saveSession(session)
+                trainingDao.markAsSynced(session.id)
             } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
-
-        trainingDao.softDeleteSession(id)
     }
 
     suspend fun updateSessionTitle(id: String, title: String) {
         trainingDao.updateSessionTitle(id, title)
+
+        val session = trainingDao.getSessionById(id)
+
+        if (session != null && session.userId != AuthRepository.GUEST_ID) {
+            try {
+                firestoreDataSource.saveSession(session)
+                trainingDao.markAsSynced(id)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    suspend fun deleteSession(id: String) {
+        val session = trainingDao.getSessionById(id) ?: return
+
+        trainingDao.softDeleteSession(id)
+
+        if (session.userId != AuthRepository.GUEST_ID) {
+            try {
+                firestoreDataSource.softDeleteSession(session.userId, id)
+                trainingDao.markAsSynced(id)
+            } catch (e: Exception) {
+            }
+        }
     }
 
     fun getUserProfile(userId: String): Flow<UserProfile?> {
@@ -73,12 +87,22 @@ class DatabaseRepository(
 
             val localProfile = userDao.getUserProfile(realUserId).firstOrNull()
 
-            if (localProfile != null && (localProfile.firstName.isNotBlank() || localProfile.weightKg > 0)) {
-                try {
-                    firestoreDataSource.saveUserProfile(localProfile)
-                } catch (e: Exception) {
-                    e.printStackTrace()
+            try {
+                val remoteProfile = firestoreDataSource.getUserProfile(realUserId)
+
+                if (remoteProfile == null) {
+                    if (localProfile != null) {
+                        firestoreDataSource.saveUserProfile(localProfile)
+                    }
+                } else {
+                    if (localProfile != null && localProfile.lastEdited > remoteProfile.lastEdited) {
+                        firestoreDataSource.saveUserProfile(localProfile)
+                    } else {
+                        userDao.saveUserProfile(remoteProfile)
+                    }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
 
             syncPendingSessions()
@@ -87,10 +111,13 @@ class DatabaseRepository(
 
     suspend fun syncPendingSessions() {
         val unsyncedSessions = trainingDao.getUnsyncedSessions()
+        if (unsyncedSessions.isEmpty()) return
 
         val successfulIds = mutableListOf<String>()
 
         unsyncedSessions.forEach { session ->
+            if (session.userId == AuthRepository.GUEST_ID) return@forEach
+
             try {
                 firestoreDataSource.saveSession(session)
                 successfulIds.add(session.id)
@@ -111,10 +138,15 @@ class DatabaseRepository(
             }
 
             val remoteProfile = firestoreDataSource.getUserProfile(userId)
+            val localProfile = userDao.getUserProfile(userId).firstOrNull()
+
             if (remoteProfile != null) {
-                userDao.saveUserProfile(remoteProfile)
+                if (localProfile == null || remoteProfile.lastEdited > localProfile.lastEdited) {
+                    userDao.saveUserProfile(remoteProfile)
+                }
             }
         } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }
