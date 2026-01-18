@@ -9,11 +9,8 @@ import kotlinx.coroutines.flow.map
 
 class GamificationRepository(
     private val trainingDao: TrainingDao,
-    private val authRepository: AuthRepository
 ) {
-
-    fun getMissionsProgress(): Flow<List<MissionProgress>> {
-        val userId = authRepository.currentUserIdSafe
+    fun getMissionsProgress(userId: String): Flow<List<MissionProgress>> {
 
         return trainingDao.getUserStatistics(userId).map { stats ->
             MissionsData.allMissions.map { mission ->

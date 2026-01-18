@@ -8,6 +8,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.moes.repositories.AuthRepository
 import com.moes.repositories.DatabaseRepository
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
@@ -22,6 +24,9 @@ class AuthViewModel(
 
     var isAnonymous by mutableStateOf(authRepository.isUserAnonymous())
         private set
+
+    private val _loginCompletedEvent = Channel<Unit>()
+    val loginCompletedEvent = _loginCompletedEvent.receiveAsFlow()
 
     init {
         authRepository.addAuthStateListener { isAnon ->
@@ -71,6 +76,8 @@ class AuthViewModel(
         try {
             action()
             handleSuccessfulLogin()
+
+            _loginCompletedEvent.send(Unit)
         } catch (e: Exception) {
             handleAuthError(e)
         } finally {

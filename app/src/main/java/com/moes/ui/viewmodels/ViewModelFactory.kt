@@ -40,7 +40,8 @@ class ViewModelFactory(private val context: Context) : ViewModelProvider.Factory
 
         if (modelClass.isAssignableFrom(MissionsViewModel::class.java)) {
             return MissionsViewModel(
-                app.gamificationRepository
+                app.gamificationRepository,
+                app.authRepository
             ) as T
         }
 
