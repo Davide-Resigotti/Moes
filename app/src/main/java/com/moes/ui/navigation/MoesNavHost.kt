@@ -16,13 +16,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.History
@@ -38,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -52,10 +49,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.moes.routes.Routes
-import com.moes.ui.screens.AuthScreen
 import com.moes.ui.screens.HomeScreen
 import com.moes.ui.screens.SessionDetailScreen
 import com.moes.ui.screens.SessionsScreen
+import com.moes.ui.screens.auth.AuthScreen
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Home : Screen(Routes.HOME, "Home", Icons.Filled.Home)
@@ -91,7 +88,9 @@ fun MoesNavHost() {
                 HomeScreen(
                     onNavigateToSummary = { sessionId ->
                         navController.navigate(Routes.SESSIONS) {
-                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
                             launchSingleTop = true
                             restoreState = true
                         }
@@ -111,7 +110,8 @@ fun MoesNavHost() {
                 route = Routes.SESSION_DETAIL,
                 arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
             ) { backStackEntry ->
-                val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
+                val sessionId =
+                    backStackEntry.arguments?.getString("sessionId") ?: return@composable
                 SessionDetailScreen(
                     sessionId = sessionId,
                     onNavigateBack = { navController.popBackStack() }
@@ -199,7 +199,10 @@ fun MoesNavHost() {
                             modifier = Modifier
                                 .width(itemWidth)
                                 .fillMaxHeight()
-                                .clickable(interactionSource = interactionSource, indication = null) {
+                                .clickable(
+                                    interactionSource = interactionSource,
+                                    indication = null
+                                ) {
                                     navController.navigate(screen.route) {
                                         popUpTo(navController.graph.findStartDestination().id) {
                                             saveState = true
