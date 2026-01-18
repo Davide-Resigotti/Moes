@@ -364,7 +364,7 @@ fun HomeScreen(
                             val circleAnnotationOptions = CircleAnnotationOptions()
                                 .withPoint(point)
                                 .withCircleRadius(8.0)
-                                .withCircleColor("#ee4e8b")
+                                .withCircleColor("#f06529")
                                 .withCircleStrokeWidth(2.0)
                                 .withCircleStrokeColor("#ffffff")
                             circleAnnotationManager?.create(circleAnnotationOptions)
@@ -463,7 +463,12 @@ fun HomeScreen(
                 FloatingActionButton(
                     onClick = {
                         val currentLoc = lastEnhancedLocation
+
                         if (currentLoc != null) {
+                            if (currentLoc.latitude == 0.0 && currentLoc.longitude == 0.0) {
+                                return@FloatingActionButton
+                            }
+
                             mapViewState.value?.camera?.easeTo(
                                 CameraOptions.Builder()
                                     .center(
