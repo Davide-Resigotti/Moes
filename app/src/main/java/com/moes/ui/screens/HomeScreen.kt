@@ -249,8 +249,9 @@ fun HomeScreen(
         }
     }
 
-    LaunchedEffect(trainingState, mapViewState.value) {
+    LaunchedEffect(trainingState, mapViewState.value, navigationCamera) {
         val map = mapViewState.value ?: return@LaunchedEffect
+
         map.location.apply {
             enabled = true
             puckBearingEnabled = true
@@ -259,6 +260,10 @@ fun HomeScreen(
             } else {
                 PuckBearing.COURSE
             }
+        }
+
+        if (trainingState == TrainingState.RUNNING) {
+            navigationCamera?.requestNavigationCameraToFollowing()
         }
     }
 
@@ -319,7 +324,7 @@ fun HomeScreen(
                             EdgeInsets(
                                 130.dp.toPx().toDouble(),
                                 24.dp.toPx().toDouble(),
-                                320.dp.toPx().toDouble(),
+                                180.dp.toPx().toDouble(),
                                 24.dp.toPx().toDouble()
                             )
                         }
@@ -327,8 +332,8 @@ fun HomeScreen(
 
                     viewportDataSource?.apply {
                         overviewPitchPropertyOverride(0.0)
-                        followingZoomPropertyOverride(18.0)
-                        followingPitchPropertyOverride(50.0)
+                        followingZoomPropertyOverride(16.5)
+                        followingPitchPropertyOverride(40.0)
                     }
 
                     navigationCamera = NavigationCamera(mapboxMap, camera, viewportDataSource!!)
