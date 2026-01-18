@@ -10,9 +10,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -68,7 +68,7 @@ fun TrainingOverlay(
                         contentColor = MaterialTheme.colorScheme.onErrorContainer
                     )
                 ) {
-                    Icon(Icons.Default.Clear, contentDescription = "Stop")
+                    Icon(Icons.Default.Stop, contentDescription = "Stop")
                     Spacer(Modifier.width(8.dp))
                     Text("Stop")
                 }
@@ -83,7 +83,7 @@ fun TrainingOverlay(
 
                 if (trainingState == TrainingState.RUNNING) {
                     Button(onClick = onPauseClick, colors = actionButtonColors) {
-                        Icon(Icons.Default.Face, contentDescription = "Pause")
+                        Icon(Icons.Default.Pause, contentDescription = "Pause")
                         Spacer(Modifier.width(8.dp))
                         Text("Pausa")
                     }
