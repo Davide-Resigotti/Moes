@@ -16,13 +16,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.History
@@ -38,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -52,6 +49,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.moes.routes.Routes
+import com.moes.ui.screens.AccountScreen
 import com.moes.ui.screens.HomeScreen
 import com.moes.ui.screens.SessionDetailScreen
 import com.moes.ui.screens.SessionsScreen
@@ -67,21 +65,15 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
 fun MoesNavHost() {
     val navController = rememberNavController()
 
-    val items = listOf(
-        Screen.Home,
-        Screen.Sessions,
-        Screen.Account,
-    )
+    val items = listOf(Screen.Home, Screen.Sessions, Screen.Account)
 
-    // --- CONFIGURAZIONE NAVBAR ---
-    val navBarHeight = 64.dp // Più bassa (era 80dp)
+    val navBarHeight = 64.dp
     val navBarBottomMargin = 24.dp
     val navBarHorizontalMargin = 24.dp
-    val navBarShape = CircleShape // A PILLOLA (Completamente rotonda)
+    val navBarShape = CircleShape
 
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // 1. CONTENT
         NavHost(
             navController = navController,
             startDestination = Routes.HOME,
@@ -91,144 +83,146 @@ fun MoesNavHost() {
                 HomeScreen(
                     onNavigateToSummary = { sessionId ->
                         navController.navigate(Routes.SESSIONS) {
-                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
                             launchSingleTop = true
                             restoreState = true
                         }
                         navController.navigate(Routes.sessionDetail(sessionId))
-                    }
-                )
+                    })
             }
-            composable(Routes.ACCOUNT) { AuthScreen() }
+
+            composable(Routes.ACCOUNT) {
+                AccountScreen(
+                    onNavigateToAuth = {
+                        navController.navigate(Routes.AUTH)
+                    })
+            }
+
+            composable(Routes.AUTH) {
+                AuthScreen(
+                    onLoginSuccess = {
+                        navController.popBackStack()
+                    })
+            }
+
             composable(Routes.SESSIONS) {
                 SessionsScreen(
                     onSessionClick = { sessionId ->
                         navController.navigate(Routes.sessionDetail(sessionId))
-                    }
-                )
+                    })
             }
             composable(
                 route = Routes.SESSION_DETAIL,
                 arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
             ) { backStackEntry ->
-                val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
+                val sessionId =
+                    backStackEntry.arguments?.getString("sessionId") ?: return@composable
                 SessionDetailScreen(
-                    sessionId = sessionId,
-                    onNavigateBack = { navController.popBackStack() }
-                )
+                    sessionId = sessionId, onNavigateBack = { navController.popBackStack() })
             }
         }
 
-        // 2. NAVBAR FLUTTUANTE
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(
-                    start = navBarHorizontalMargin,
-                    end = navBarHorizontalMargin,
-                    bottom = navBarBottomMargin
-                )
-                .shadow(12.dp, shape = navBarShape)
-                .clip(navBarShape)
-                .background(MaterialTheme.colorScheme.surface)
-                .height(navBarHeight)
-        ) {
-            val navBackStackEntry by navController.currentBackStackEntryAsState()
-            val currentDestination = navBackStackEntry?.destination
+        val navBackStackEntry by navController.currentBackStackEntryAsState()
+        val currentDestination = navBackStackEntry?.destination
+        val showNavBar = items.any { it.route == currentDestination?.route }
 
-            val selectedIndex by remember(currentDestination) {
-                derivedStateOf {
-                    var index = 0
-                    items.forEachIndexed { i, screen ->
-                        val isSelected = if (screen == Screen.Sessions) {
-                            currentDestination?.hierarchy?.any {
-                                it.route == Routes.SESSIONS || it.route == Routes.SESSION_DETAIL
-                            } == true
-                        } else {
-                            currentDestination?.hierarchy?.any { it.route == screen.route } == true
+        if (showNavBar) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(
+                        start = navBarHorizontalMargin,
+                        end = navBarHorizontalMargin,
+                        bottom = navBarBottomMargin
+                    )
+                    .shadow(12.dp, shape = navBarShape)
+                    .clip(navBarShape)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .height(navBarHeight)
+            ) {
+                val selectedIndex by remember(currentDestination) {
+                    derivedStateOf {
+                        var index = 0
+                        items.forEachIndexed { i, screen ->
+                            if (currentDestination?.hierarchy?.any { it.route == screen.route } == true) {
+                                index = i
+                            }
                         }
-                        if (isSelected) index = i
+                        index
                     }
-                    index
                 }
-            }
 
-            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                val totalWidth = maxWidth
-                val itemWidth = totalWidth / items.size
+                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                    val totalWidth = maxWidth
+                    val itemWidth = totalWidth / items.size
 
-                // ANIMAZIONE SLIDER (BOLLA)
-                val indicatorOffset by animateDpAsState(
-                    targetValue = itemWidth * selectedIndex,
-                    animationSpec = spring(stiffness = Spring.StiffnessLow, dampingRatio = 0.7f),
-                    label = "indicatorOffset"
-                )
+                    val indicatorOffset by animateDpAsState(
+                        targetValue = itemWidth * selectedIndex, animationSpec = spring(
+                            stiffness = Spring.StiffnessLow, dampingRatio = 0.7f
+                        ), label = "indicatorOffset"
+                    )
 
-                // LA BOLLA (Sfondo grigio che si muove)
-                Box(
-                    modifier = Modifier
-                        .offset(x = indicatorOffset)
-                        .width(itemWidth)
-                        .fillMaxHeight()
-                        // Padding ridotto perché la bar è più bassa
-                        .padding(horizontal = 4.dp, vertical = 4.dp),
-                    contentAlignment = Alignment.Center
-                ) {
                     Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape) // Bolla interna a pillola
-                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f))
-                    )
-                }
-
-                // ICONE + TESTO
-                Row(modifier = Modifier.fillMaxSize()) {
-                    items.forEachIndexed { index, screen ->
-                        val isSelected = index == selectedIndex
-
-                        val contentColor by animateColorAsState(
-                            targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            animationSpec = tween(300),
-                            label = "contentColor"
-                        )
-
-                        val interactionSource = remember { MutableInteractionSource() }
-
-                        Column(
+                            .offset(x = indicatorOffset)
+                            .width(itemWidth)
+                            .fillMaxHeight()
+                            .padding(4.dp), contentAlignment = Alignment.Center
+                    ) {
+                        Box(
                             modifier = Modifier
-                                .width(itemWidth)
-                                .fillMaxHeight()
-                                .clickable(interactionSource = interactionSource, indication = null) {
-                                    navController.navigate(screen.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f))
+                        )
+                    }
+
+                    Row(modifier = Modifier.fillMaxSize()) {
+                        items.forEachIndexed { index, screen ->
+                            val isSelected = index == selectedIndex
+                            val contentColor by animateColorAsState(
+                                targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                animationSpec = tween(300),
+                                label = "contentColor"
+                            )
+
+                            Column(
+                                modifier = Modifier
+                                    .width(itemWidth)
+                                    .fillMaxHeight()
+                                    .clickable(
+                                        indication = null,
+                                        interactionSource = remember { MutableInteractionSource() }) {
+                                        navController.navigate(screen.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
                                         }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                },
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = screen.icon,
-                                contentDescription = screen.title,
-                                tint = contentColor,
-                                modifier = Modifier.height(24.dp)
-                            )
-
-                            Spacer(modifier = Modifier.height(2.dp))
-
-                            Text(
-                                text = screen.title,
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 10.sp, // Font leggermente più piccolo per la bar bassa
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                ),
-                                color = contentColor,
-                                maxLines = 1
-                            )
+                                    },
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = screen.icon,
+                                    contentDescription = screen.title,
+                                    tint = contentColor,
+                                    modifier = Modifier.height(24.dp)
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = screen.title,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 10.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                    ),
+                                    color = contentColor,
+                                    maxLines = 1
+                                )
+                            }
                         }
                     }
                 }

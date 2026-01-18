@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -30,12 +32,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.moes.data.UserProfile
-import com.moes.ui.screens.ProfileStat
 
 @Composable
 fun UserProfileCard(
     profile: UserProfile,
-    onLogout: () -> Unit,
+    isGuest: Boolean,
+    onMainActionClick: () -> Unit,
     onEdit: () -> Unit
 ) {
     Surface(
@@ -51,14 +53,17 @@ fun UserProfileCard(
                     modifier = Modifier
                         .size(64.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                        .background(
+                            if (isGuest) MaterialTheme.colorScheme.surfaceVariant
+                            else MaterialTheme.colorScheme.primaryContainer
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Qui potresti usare Coil per caricare profile.profilePictureUrl
                     Text(
                         text = profile.firstName.take(1).uppercase().ifBlank { "U" },
                         style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = if (isGuest) MaterialTheme.colorScheme.onSurfaceVariant
+                        else MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
 
@@ -67,30 +72,51 @@ fun UserProfileCard(
                 // INFO PRINCIPALI
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = profile.fullName,
+                        text = if (profile.firstName.isBlank()) "Ospite" else profile.fullName,
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold
                         ),
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    Text(
-                        text = "Sincronizzato sul Cloud",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+
+                    // Stato Sync
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (isGuest) {
+                            Icon(
+                                Icons.Default.CloudOff,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.outline
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = "Non sincronizzato",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        } else {
+                            Text(
+                                text = "Sincronizzato sul Cloud",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
 
-                // TASTO LOGOUT
+                // TASTO LOGIN/LOGOUT
                 IconButton(
-                    onClick = onLogout,
+                    onClick = onMainActionClick,
                     colors = IconButtonDefaults.iconButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error,
-                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                        contentColor = if (isGuest) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        containerColor = if (isGuest) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer.copy(
+                            alpha = 0.3f
+                        )
                     )
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Logout,
-                        contentDescription = "Logout"
+                        imageVector = if (isGuest) Icons.AutoMirrored.Filled.Login else Icons.AutoMirrored.Filled.Logout,
+                        contentDescription = if (isGuest) "Login" else "Logout"
                     )
                 }
             }
@@ -99,7 +125,7 @@ fun UserProfileCard(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             Spacer(modifier = Modifier.height(16.dp))
 
-            // DATI FISICI (GRIGLIA)
+            // DATI FISICI
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -115,7 +141,6 @@ fun UserProfileCard(
                 )
                 ProfileStat(label = "SESSO", value = profile.gender)
 
-                // Bottone Edit
                 IconButton(onClick = onEdit) {
                     Icon(
                         imageVector = Icons.Default.Edit,
@@ -125,5 +150,23 @@ fun UserProfileCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun ProfileStat(label: String, value: String) {
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }

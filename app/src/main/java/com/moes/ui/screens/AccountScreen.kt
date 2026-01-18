@@ -3,7 +3,6 @@ package com.moes.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,16 +35,16 @@ import com.moes.ui.viewmodels.ViewModelFactory
 
 @Composable
 fun AccountScreen(
-    onLogout: () -> Unit = {},
+    onNavigateToAuth: () -> Unit,
     missionsViewModel: MissionsViewModel = viewModel(factory = ViewModelFactory(LocalContext.current)),
     profileViewModel: ProfileViewModel = viewModel(factory = ViewModelFactory(LocalContext.current))
 ) {
     val missions by missionsViewModel.missions.collectAsState()
     val userProfile by profileViewModel.userProfile.collectAsState()
+    val isGuest by profileViewModel.isGuest.collectAsState()
 
     var showEditDialog by remember { mutableStateOf(false) }
 
-    // DIALOG DI MODIFICA
     if (showEditDialog) {
         EditProfileDialog(
             profile = userProfile,
@@ -91,10 +90,16 @@ fun AccountScreen(
                     )
                 }
 
-                // CARD PROFILO REALE
                 UserProfileCard(
                     profile = userProfile,
-                    onLogout = onLogout,
+                    isGuest = isGuest, // Passiamo lo stato
+                    onMainActionClick = {
+                        if (isGuest) {
+                            onNavigateToAuth() // Va al login
+                        } else {
+                            profileViewModel.logout() // Esegue logout
+                        }
+                    },
                     onEdit = { showEditDialog = true }
                 )
             }
@@ -115,23 +120,5 @@ fun AccountScreen(
                 MissionCard(progress = mission)
             }
         }
-    }
-}
-
-@Composable
-fun ProfileStat(label: String, value: String) {
-    Column {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
     }
 }
