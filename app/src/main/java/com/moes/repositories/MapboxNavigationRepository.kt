@@ -24,28 +24,22 @@ class MapboxNavigationRepository {
 
     fun fetchRoute(coordinates: List<Point>) {
         val routeOptions = RouteOptions.builder()
-            .applyDefaultNavigationOptions()
             .coordinatesList(coordinates)
-            .profile("walking")
+            .profile("mapbox/walking")
+            .alternatives(false)
             .build()
 
         mapboxNavigation.requestRoutes(
             routeOptions,
             callback = object : NavigationRouterCallback {
-                override fun onRoutesReady(
-                    routes: List<NavigationRoute>,
-                    routerOrigin: String
-                ) {
+                override fun onRoutesReady(routes: List<NavigationRoute>, routerOrigin: String) {
                     _navigationRoutes.value = routes
                 }
-
                 override fun onFailure(reasons: List<RouterFailure>, routeOptions: RouteOptions) {
-                    println("Route request failed with reasons: $reasons")
+                    Log.e("NavigationRepo", "Route failed: $reasons")
                     _navigationRoutes.value = emptyList()
                 }
-
                 override fun onCanceled(routeOptions: RouteOptions, routerOrigin: String) {
-                    println("Route request was canceled.")
                     _navigationRoutes.value = emptyList()
                 }
             }

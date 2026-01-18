@@ -13,7 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.moes.ui.navigation.MoesNavHost
-import com.moes.ui.screens.LocationPermissionScreen // Importa la nuova schermata
+import com.moes.ui.screens.LocationPermissionScreen
 import com.moes.ui.theme.MoesTheme
 
 @Composable
