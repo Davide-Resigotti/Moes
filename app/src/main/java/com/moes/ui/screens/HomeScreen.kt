@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.NearMe
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -267,6 +267,26 @@ fun HomeScreen(
         }
     }
 
+    LaunchedEffect(navigationRoutes, trainingState, viewportDataSource) {
+        val dataSource = viewportDataSource ?: return@LaunchedEffect
+
+        val bottomPadding = if (trainingState != TrainingState.IDLE && navigationRoutes.isEmpty()) {
+            320.dp
+        } else {
+            180.dp
+        }
+
+        dataSource.followingPadding = with(density) {
+            EdgeInsets(
+                130.dp.toPx().toDouble(),
+                24.dp.toPx().toDouble(),
+                bottomPadding.toPx().toDouble(),
+                24.dp.toPx().toDouble()
+            )
+        }
+        dataSource.evaluate()
+    }
+
     DisposableEffect(locationObserver) {
         mapboxNavigation.registerLocationObserver(locationObserver)
         mapboxNavigation.registerRouteProgressObserver(routeProgressObserver)
@@ -465,7 +485,7 @@ fun HomeScreen(
                     containerColor = MaterialTheme.colorScheme.surface,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ) {
-                    Icon(imageVector = Icons.Default.NearMe, contentDescription = "My Location")
+                    Icon(imageVector = Icons.Default.MyLocation, contentDescription = "My Location")
                 }
             }
         }
