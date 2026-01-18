@@ -56,7 +56,6 @@ import com.moes.ui.screens.AuthScreen
 import com.moes.ui.screens.HomeScreen
 import com.moes.ui.screens.SessionDetailScreen
 import com.moes.ui.screens.SessionsScreen
-
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Home : Screen(Routes.HOME, "Home", Icons.Filled.Home)
     object Sessions : Screen(Routes.SESSIONS, "Sessions", Icons.Filled.History)
