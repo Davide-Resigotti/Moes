@@ -12,7 +12,8 @@ data class UserProfile(
     val heightCm: Float = 0f,
     val gender: String = "M",
     val birthYear: Int = 0,
-    val profilePictureUrl: String? = null
+    val profilePictureUrl: String? = null,
+    val lastEdited: Long = 0L
 ) {
     val fullName: String
         get() = if (firstName.isBlank() && lastName.isBlank()) "Utente" else "$firstName $lastName".trim()

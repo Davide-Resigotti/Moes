@@ -61,7 +61,8 @@ class ProfileViewModel(
                 lastName = lastName,
                 weightKg = w,
                 heightCm = h,
-                gender = gender
+                gender = gender,
+                lastEdited = System.currentTimeMillis()
             )
             databaseRepository.saveUserProfile(updatedProfile)
         }
