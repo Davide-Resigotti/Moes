@@ -11,6 +11,11 @@ object FormatUtils {
         return SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(millis))
     }
 
+    fun formatBirthDate(millis: Long): String {
+        if (millis == 0L) return ""
+        return SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(millis))
+    }
+
     fun formatTime(millis: Long): String {
         return SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(millis))
     }

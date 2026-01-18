@@ -14,9 +14,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,8 +27,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SelectableDates // Importante
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,22 +42,58 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.moes.data.UserProfile
+import com.moes.utils.FormatUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileDialog(
     profile: UserProfile,
     onDismiss: () -> Unit,
-    onSave: (String, String, String, String, String) -> Unit
+    onSave: (String, String, String, String, String, Long) -> Unit
 ) {
     var firstName by remember { mutableStateOf(profile.firstName) }
     var lastName by remember { mutableStateOf(profile.lastName) }
     var weight by remember { mutableStateOf(if (profile.weightKg > 0) profile.weightKg.toString() else "") }
     var height by remember { mutableStateOf(if (profile.heightCm > 0) profile.heightCm.toString() else "") }
 
+    var birthDate by remember { mutableStateOf(profile.birthDate) }
+    var showDatePicker by remember { mutableStateOf(false) }
+
     var gender by remember { mutableStateOf(profile.gender) }
     var genderExpanded by remember { mutableStateOf(false) }
     val genderOptions = mapOf("M" to "Uomo", "F" to "Donna", "O" to "Altro")
+
+    // DATE PICKER
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = if (birthDate > 0) birthDate else System.currentTimeMillis(),
+            // Questo oggetto blocca le date future
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    return utcTimeMillis <= System.currentTimeMillis()
+                }
+
+                override fun isSelectableYear(year: Int): Boolean {
+                    return year <= java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+                }
+            }
+        )
+
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { birthDate = it }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Annulla") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -72,7 +113,7 @@ fun EditProfileDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // CAMPI TESTO
+                // CAMPI NOME / COGNOME
                 MoesDialogTextField(
                     value = firstName,
                     onValueChange = { firstName = it },
@@ -85,6 +126,7 @@ fun EditProfileDialog(
                     label = "Cognome"
                 )
 
+                // PESO / ALTEZZA
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     MoesDialogTextField(
                         value = weight,
@@ -102,6 +144,29 @@ fun EditProfileDialog(
                     )
                 }
 
+                // DATA DI NASCITA (Cliccabile)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDatePicker = true }) {
+                    OutlinedTextField(
+                        value = FormatUtils.formatBirthDate(birthDate),
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Data di Nascita") },
+                        trailingIcon = { Icon(Icons.Default.CalendarToday, null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = false,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            disabledBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    )
+                }
+
                 // DROPDOWN SESSO
                 Box(modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(
@@ -109,9 +174,7 @@ fun EditProfileDialog(
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Sesso") },
-                        trailingIcon = {
-                            Icon(Icons.Default.ArrowDropDown, null)
-                        },
+                        trailingIcon = { Icon(Icons.Default.ArrowDropDown, null) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -145,7 +208,7 @@ fun EditProfileDialog(
         },
         confirmButton = {
             Button(
-                onClick = { onSave(firstName, lastName, weight, height, gender) },
+                onClick = { onSave(firstName, lastName, weight, height, gender, birthDate) },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
