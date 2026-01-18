@@ -46,6 +46,7 @@ dependencies {
     val navVersion = "2.9.6"
     val roomVersion = "2.6.1"
 
+    // Core & UI
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -55,6 +56,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation("androidx.compose.material:material-icons-extended:1.6.8")
+
+    // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -62,21 +65,32 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    // Architecture
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+    implementation("androidx.navigation:navigation-compose:$navVersion")
+
+    // Serialization (Usata nei data class)
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+
+    // Google Services
     implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation("com.google.android.gms:play-services-auth:21.0.0")
+
+    // Mapbox
     implementation("com.mapbox.maps:android-ndk27:11.16.1")
     implementation("com.mapbox.extension:maps-compose-ndk27:11.15.3")
     implementation("com.mapbox.search:mapbox-search-android-ndk27:2.16.1")
     implementation("com.mapbox.navigationcore:android-ndk27:3.16.1")
-    implementation("androidx.navigation:navigation-compose:$navVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+
+    // Firebase (BOM gestisce le versioni)
     implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-auth")
+
+    // Room Database
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
-    implementation("com.google.code.gson:gson:2.10.1")
 }

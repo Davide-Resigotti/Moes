@@ -85,7 +85,6 @@ class FirestoreDataSource {
                     heightCm = snapshot.getDouble("heightCm")?.toFloat() ?: 0f,
                     gender = snapshot.getString("gender") ?: "M",
                     birthYear = snapshot.getLong("birthYear")?.toInt() ?: 0,
-                    profilePictureUrl = snapshot.getString("profilePictureUrl"),
                     lastEdited = snapshot.getLong("lastEdited") ?: 0L
                 )
             } catch (e: Exception) {
