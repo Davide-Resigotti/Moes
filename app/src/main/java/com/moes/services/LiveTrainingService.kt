@@ -36,13 +36,41 @@ class LiveTrainingService : Service() {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 locationResult.lastLocation?.let { location ->
-                    val newCoordinate = Coordinate(location.latitude, location.longitude)
+                    // FILTRO 1: Scarta GPS impreciso
+                    if (location.accuracy > 20f) return@let
+
+                    // FILTRO 2: Scarta punti troppo vicini (jitter GPS)
+                    val lastCoord = liveTrainingSession?.segments?.lastOrNull()?.coordinates?.lastOrNull()
+                    if (lastCoord != null) {
+                        val distance = calculateDistance(
+                            lastCoord.latitude, lastCoord.longitude,
+                            location.latitude, location.longitude
+                        )
+                        if (distance < 3.0) return@let  // Ignora se < 3 metri
+                    }
+
+                    val newCoordinate = Coordinate(
+                        latitude = location.latitude,
+                        longitude = location.longitude,
+                        timestamp = System.currentTimeMillis()
+                    )
                     updateSessionWithLocation(newCoordinate)
                 }
             }
         }
     }
 
+    //calcola la distanza in metri tra due coordinate GPS usando la formula di Haversine
+    private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val R = 6371000.0 // Raggio Terra in metri
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val a = kotlin.math.sin(dLat / 2) * kotlin.math.sin(dLat / 2) +
+                kotlin.math.cos(Math.toRadians(lat1)) * kotlin.math.cos(Math.toRadians(lat2)) *
+                kotlin.math.sin(dLon / 2) * kotlin.math.sin(dLon / 2)
+        val c = 2 * kotlin.math.atan2(kotlin.math.sqrt(a), kotlin.math.sqrt(1 - a))
+        return R * c
+    }
     /**
      * Logica di aggiornamento immutabile rivisitata e pulita.
      */
