@@ -21,7 +21,7 @@ class GamificationRepository(
                     MissionType.COUNT -> stats.totalSessions.toLong()
                     MissionType.DISTANCE -> stats.totalDistanceMeters.toLong()
                     MissionType.DURATION -> stats.totalDurationMs
-                    MissionType.STREAK -> stats.currentStreakDays.toLong()
+                    MissionType.STREAK -> stats.longestStreakDays.toLong()
                     MissionType.OVER_5K -> stats.sessionsOver5km.toLong()
                     MissionType.OVER_10K -> stats.sessionsOver10km.toLong()
                 }

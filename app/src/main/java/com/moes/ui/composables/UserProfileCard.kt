@@ -98,7 +98,7 @@ fun UserProfileCard(
                         )
                     }
 
-                    // Badge Streak (mostrato solo se >= 2 giorni)
+                    // Badge Streak
                     if (showStreak) {
                         Box(
                             modifier = Modifier

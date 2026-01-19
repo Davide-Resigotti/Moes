@@ -120,10 +120,10 @@ class FirestoreDataSource {
 
                 totalSessions = snapshot.getLong("totalSessions")?.toInt() ?: 0,
                 totalDurationMs = snapshot.getLong("totalDurationMs") ?: 0L,
-
+                totalDistanceMeters = snapshot.getDouble("totalDistanceMeters") ?: 0.0,
+                longestStreakDays = snapshot.getLong("longestStreakDays")?.toInt() ?: 0,
                 currentStreakDays = snapshot.getLong("currentStreakDays")?.toInt() ?: 0,
                 lastTrainingDate = snapshot.getLong("lastTrainingDate") ?: 0L,
-
                 sessionsOver5km = snapshot.getLong("sessionsOver5km")?.toInt() ?: 0,
                 sessionsOver10km = snapshot.getLong("sessionsOver10km")?.toInt() ?: 0,
 
