@@ -11,6 +11,7 @@ data class UserStatistics(
     val totalDurationMs: Long = 0L,
     val totalDistanceMeters: Double = 0.0,
 
+    val longestStreakDays: Int = 0,
     val currentStreakDays: Int = 0,
     val lastTrainingDate: Long = 0L,
 
