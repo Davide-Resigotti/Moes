@@ -20,7 +20,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DeleteForever
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -28,11 +30,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -55,7 +58,6 @@ import com.moes.ui.viewmodels.SessionDetailViewModel
 import com.moes.ui.viewmodels.ViewModelFactory
 import com.moes.utils.CaloriesCalculator
 import com.moes.utils.FormatUtils
-import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,6 +75,7 @@ fun SessionDetailScreen(
 
     var titleText by remember { mutableStateOf("") }
     var isInitialized by remember { mutableStateOf(false) }
+    var showCalorieInfoDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(session) {
         if (!isInitialized && session != null) {
@@ -81,54 +84,69 @@ fun SessionDetailScreen(
         }
     }
 
-    LaunchedEffect(titleText) {
-        if (isInitialized && session != null) {
-            delay(1000)
-            if (titleText.trim() != session!!.title) {
-                viewModel.updateTitleSilently(titleText)
+    // Dialog Informativo Calorie
+    if (showCalorieInfoDialog) {
+        AlertDialog(
+            onDismissRequest = { showCalorieInfoDialog = false },
+            icon = { Icon(Icons.Default.Info, contentDescription = null) },
+            title = { Text("Calcolo Calorie") },
+            text = {
+                Text(
+                    "Le calorie mostrate sono una stima basata sul tipo di attività, la durata e la distanza.\n\n" +
+                            "Per migliorare la precisione, assicurati di aver inserito Peso, Altezza e Data di Nascita aggiornati nel tuo Profilo."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showCalorieInfoDialog = false }) {
+                    Text("Ho capito")
+                }
             }
-        }
+        )
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background, topBar = {
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
             TopAppBar(
                 title = {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "Dettaglio Allenamento",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-
-                    if (session != null) {
-                        Icon(
-                            imageVector = if (session!!.isSynced) Icons.Default.CloudDone else Icons.Default.CloudOff,
-                            contentDescription = "Sync Status",
-                            tint = if (session!!.isSynced) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.size(24.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Dettaglio Allenamento",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f),
+                            color = MaterialTheme.colorScheme.onBackground
                         )
-                        Spacer(modifier = Modifier.width(16.dp))
+
+                        if (session != null) {
+                            Icon(
+                                imageVector = if (session!!.isSynced) Icons.Default.CloudDone else Icons.Default.CloudOff,
+                                contentDescription = "Sync Status",
+                                tint = if (session!!.isSynced) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                        }
                     }
-                }
-            }, navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-            }, colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
-            )
-        }) { padding ->
+        }
+    ) { padding ->
         if (session == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
@@ -152,59 +170,37 @@ fun SessionDetailScreen(
                         .padding(horizontal = horizontalPadding)
                 ) {
                     SessionRouteMap(
-                        encodedGeometry = s.routeGeometry, modifier = Modifier.fillMaxSize()
+                        encodedGeometry = s.routeGeometry,
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
 
                 Column(
                     modifier = Modifier
                         .padding(horizontal = horizontalPadding, vertical = 24.dp)
-                        .fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)
+                        .fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // TEXTFIELD TITLE
-                    Surface(
-                        shape = CircleShape,
-                        shadowElevation = 2.dp,
-                        color = MaterialTheme.colorScheme.surface,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
-                        ) {
-                            TextField(
-                                value = titleText,
-                                onValueChange = { titleText = it },
-                                placeholder = {
-                                    Text(
-                                        "Nome Allenamento",
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                },
-                                modifier = Modifier.weight(1f),
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    disabledContainerColor = Color.Transparent,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                    disabledIndicatorColor = Color.Transparent,
-                                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                                    cursorColor = MaterialTheme.colorScheme.primary
-                                ),
-                                singleLine = true,
-                                textStyle = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                            Icon(
-                                Icons.Default.Edit,
-                                contentDescription = "Edit",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
+                    // TITOLO
+                    OutlinedTextField(
+                        value = titleText,
+                        onValueChange = { titleText = it },
+                        label = { Text("Nome Allenamento") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            disabledContainerColor = MaterialTheme.colorScheme.surface,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = Color.Transparent
+                        ),
+                        textStyle = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp
+                        )
+                    )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
@@ -229,14 +225,39 @@ fun SessionDetailScreen(
                         value2 = FormatUtils.formatPace(s.avgPaceSeconds)
                     )
 
+                    // CALORIE
                     if (userProfile != null) {
                         val kCal = CaloriesCalculator.calculate(s, userProfile!!)
-                        FullWidthStatCard(
-                            label = "Calorie", mainText = kCal, subText = "Kcal"
+                        CalorieStatCard(
+                            kcal = kCal,
+                            onInfoClick = { showCalorieInfoDialog = true }
                         )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
+
+                    // BOTTONE SALVA
+                    val hasChanges = titleText.trim() != s.title
+                    Button(
+                        onClick = { viewModel.saveTitle(titleText) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        enabled = hasChanges,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                alpha = 0.5f
+                            )
+                        ),
+                        shape = CircleShape
+                    ) {
+                        Icon(Icons.Default.Save, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Salva Modifiche", fontWeight = FontWeight.Bold)
+                    }
 
                     // BOTTONE ELIMINA
                     Button(
@@ -254,7 +275,6 @@ fun SessionDetailScreen(
                         Spacer(Modifier.width(8.dp))
                         Text("Elimina Allenamento", fontWeight = FontWeight.Bold)
                     }
-
                 }
             }
         }
@@ -293,6 +313,57 @@ fun FullWidthStatCard(label: String, mainText: String, subText: String) {
         }
     }
 }
+
+@Composable
+fun CalorieStatCard(kcal: String, onInfoClick: () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 2.dp,
+    ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .padding(vertical = 16.dp, horizontal = 20.dp)
+                    .align(Alignment.CenterStart),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = "CALORIE STIMATE",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp
+                    ), color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = kcal, style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.Bold, fontSize = 24.sp
+                    ), color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Kcal", style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Medium
+                    ), color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            IconButton(
+                onClick = onInfoClick,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = "Info Calorie",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+            }
+        }
+    }
+}
+
 
 @Composable
 fun StatRow(label1: String, value1: String, label2: String, value2: String) {

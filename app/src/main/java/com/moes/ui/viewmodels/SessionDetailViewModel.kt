@@ -33,11 +33,11 @@ class SessionDetailViewModel(
         }
     }
 
-    fun updateTitleSilently(newTitle: String) {
+    fun saveTitle(newTitle: String) {
         val currentSession = _session.value ?: return
         val trimmedTitle = newTitle.trim()
 
-        if (currentSession.title == trimmedTitle) return
+        if (trimmedTitle.isBlank() || currentSession.title == trimmedTitle) return
 
         viewModelScope.launch {
             try {
