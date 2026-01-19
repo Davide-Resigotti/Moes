@@ -3,6 +3,7 @@ package com.moes.data.remote
 import com.google.firebase.firestore.FirebaseFirestore
 import com.moes.data.TrainingSession
 import com.moes.data.UserProfile
+import com.moes.data.UserStatistics
 import kotlinx.coroutines.tasks.await
 
 class FirestoreDataSource {
@@ -92,6 +93,44 @@ class FirestoreDataSource {
                 null
             }
         } else {
+            null
+        }
+    }
+
+    suspend fun saveUserStatistics(stats: UserStatistics) {
+        db.collection("users")
+            .document(stats.userId)
+            .collection("data")
+            .document("statistics")
+            .set(stats)
+            .await()
+    }
+
+    suspend fun getUserStatistics(userId: String): UserStatistics? {
+        val snapshot = db.collection("users")
+            .document(userId)
+            .collection("data")
+            .document("statistics")
+            .get()
+            .await()
+
+        return try {
+            UserStatistics(
+                userId = userId,
+
+                totalSessions = snapshot.getLong("totalSessions")?.toInt() ?: 0,
+                totalDurationMs = snapshot.getLong("totalDurationMs") ?: 0L,
+
+                currentStreakDays = snapshot.getLong("currentStreakDays")?.toInt() ?: 0,
+                lastTrainingDate = snapshot.getLong("lastTrainingDate") ?: 0L,
+
+                sessionsOver5km = snapshot.getLong("sessionsOver5km")?.toInt() ?: 0,
+                sessionsOver10km = snapshot.getLong("sessionsOver10km")?.toInt() ?: 0,
+
+                lastEdited = snapshot.getLong("lastEdited") ?: 0L
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
             null
         }
     }

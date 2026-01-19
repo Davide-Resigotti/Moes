@@ -5,7 +5,6 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.moes.data.TrainingSession
-import com.moes.data.UserStatistics
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -39,16 +38,4 @@ interface TrainingDao {
 
     @Query("UPDATE training_sessions SET isDeleted = 1, isSynced = 0 WHERE id = :id")
     suspend fun softDeleteSession(id: String)
-
-    @Query(
-        """
-        SELECT 
-            COUNT(*) as totalSessions, 
-            COALESCE(SUM(durationMs), 0) as totalDurationMs, 
-            COALESCE(SUM(distanceMeters), 0) as totalDistanceMeters 
-        FROM training_sessions 
-        WHERE userId = :userId
-    """
-    )
-    fun getUserStatistics(userId: String): Flow<UserStatistics>
 }

@@ -6,11 +6,16 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.moes.data.TrainingSession
 import com.moes.data.UserProfile
+import com.moes.data.UserStatistics
 
-@Database(entities = [TrainingSession::class, UserProfile::class], version = 3)
+@Database(
+    entities = [TrainingSession::class, UserProfile::class, UserStatistics::class],
+    version = 4
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun trainingDao(): TrainingDao
     abstract fun userDao(): UserDao
+    abstract fun statisticsDao(): StatisticsDao
 
     companion object {
         @Volatile

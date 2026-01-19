@@ -35,10 +35,15 @@ class MoesApplication : Application() {
 
         authRepository = AuthRepository()
         databaseRepository =
-            DatabaseRepository(database.trainingDao(), database.userDao(), firestoreDataSource)
+            DatabaseRepository(
+                database.trainingDao(),
+                database.userDao(),
+                database.statisticsDao(),
+                firestoreDataSource
+            )
         trainingRepository = TrainingRepository(this, databaseRepository, authRepository)
         searchRepository = MapboxSearchRepository(this)
         navigationRepository = MapboxNavigationRepository()
-        gamificationRepository = GamificationRepository(database.trainingDao())
+        gamificationRepository = GamificationRepository(database.statisticsDao())
     }
 }
