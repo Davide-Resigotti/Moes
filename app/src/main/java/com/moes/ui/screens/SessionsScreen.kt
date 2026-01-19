@@ -51,7 +51,7 @@ fun SessionsScreen(
                     top = 16.dp,
                     start = 20.dp,
                     end = 20.dp,
-                    bottom = 100.dp
+                    bottom = 130.dp
                 ),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxSize()
