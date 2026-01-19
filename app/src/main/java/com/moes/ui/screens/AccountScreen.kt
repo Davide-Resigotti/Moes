@@ -42,6 +42,7 @@ fun AccountScreen(
     val missions by missionsViewModel.missions.collectAsState()
     val userProfile by profileViewModel.userProfile.collectAsState()
     val isGuest by profileViewModel.isGuest.collectAsState()
+    val userStats by profileViewModel.userStatistics.collectAsState()
 
     var showEditDialog by remember { mutableStateOf(false) }
 
@@ -92,12 +93,13 @@ fun AccountScreen(
 
                 UserProfileCard(
                     profile = userProfile,
-                    isGuest = isGuest, // Passiamo lo stato
+                    streak = userStats?.currentStreakDays ?: 0,
+                    isGuest = isGuest,
                     onMainActionClick = {
                         if (isGuest) {
-                            onNavigateToAuth() // Va al login
+                            onNavigateToAuth()
                         } else {
-                            profileViewModel.logout() // Esegue logout
+                            profileViewModel.logout()
                         }
                     },
                     onEdit = { showEditDialog = true }

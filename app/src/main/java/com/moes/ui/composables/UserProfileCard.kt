@@ -1,6 +1,7 @@
 package com.moes.ui.composables
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -30,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -42,6 +45,7 @@ import com.moes.ui.theme.LogoGradientStart
 @Composable
 fun UserProfileCard(
     profile: UserProfile,
+    streak: Int,
     isGuest: Boolean,
     onMainActionClick: () -> Unit,
     onEdit: () -> Unit
@@ -50,6 +54,15 @@ fun UserProfileCard(
         val first = profile.firstName.take(1)
         val last = profile.lastName.take(1)
         if (first.isBlank() && last.isBlank()) "U" else (first + last).uppercase()
+    }
+
+    val (showStreak, streakEmoji) = remember(streak) {
+        when (streak) {
+            100 -> true to "💯"
+            10 -> true to "🥳"
+            0 -> false to ""
+            else -> true to "🔥"
+        }
     }
 
     Surface(
@@ -61,29 +74,62 @@ fun UserProfileCard(
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
 
-                // AVATAR CON INIZIALI E GRADIENTE
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(LogoGradientStart, LogoGradientEnd)
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = initials,
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
-                        ),
-                        color = Color.White
-                    )
+                // --- AVATAR + STREAK BADGE ---
+                Box(contentAlignment = Alignment.BottomCenter) {
+                    // Avatar
+                    Box(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .clip(CircleShape)
+                            .background(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(LogoGradientStart, LogoGradientEnd)
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = initials,
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.sp
+                            ),
+                            color = Color.White
+                        )
+                    }
+
+                    // Badge Streak (mostrato solo se >= 2 giorni)
+                    if (showStreak) {
+                        Box(
+                            modifier = Modifier
+                                .offset(y = 8.dp)
+                                .shadow(4.dp, CircleShape)
+                                .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                .clip(CircleShape)
+                                .background(
+                                    brush = Brush.linearGradient(
+                                        colors = listOf(LogoGradientStart, LogoGradientEnd)
+                                    )
+                                )
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(text = streakEmoji, fontSize = 12.sp)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "$streak",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp
+                                    ),
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
                 }
 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(20.dp))
 
                 // INFO PRINCIPALI
                 Column(modifier = Modifier.weight(1f)) {
@@ -142,7 +188,7 @@ fun UserProfileCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             Spacer(modifier = Modifier.height(16.dp))
 
