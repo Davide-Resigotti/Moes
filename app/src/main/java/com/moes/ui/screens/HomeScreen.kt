@@ -79,7 +79,7 @@ import com.moes.data.TrainingState
 import com.moes.ui.composables.InstructionBanner
 import com.moes.ui.composables.SearchBar
 import com.moes.ui.composables.TrainingOverlay
-import com.moes.ui.viewmodels.HomeScreenViewModel
+import com.moes.ui.viewmodels.HomeViewModel
 import com.moes.ui.viewmodels.ViewModelFactory
 import kotlinx.coroutines.delay
 
@@ -87,7 +87,7 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalPreviewMapboxNavigationAPI::class)
 @Composable
 fun HomeScreen(
-    viewModel: HomeScreenViewModel = viewModel(factory = ViewModelFactory(LocalContext.current)),
+    viewModel: HomeViewModel = viewModel(factory = ViewModelFactory(LocalContext.current)),
     onNavigateToSummary: (String) -> Unit
 ) {
     val navigationRoutes by viewModel.navigationRoutes.collectAsState()

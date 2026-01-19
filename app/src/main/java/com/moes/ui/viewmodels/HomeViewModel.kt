@@ -17,12 +17,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-/**
- * The ViewModel for the HomeScreen.
- * It connects to the repositories and prepares data for the UI.
- */
 @SuppressLint("MissingPermission")
-class HomeScreenViewModel(
+class HomeViewModel(
     context: Context,
     private val trainingRepository: TrainingRepository,
     private val searchRepository: MapboxSearchRepository,
@@ -30,8 +26,6 @@ class HomeScreenViewModel(
 ) : ViewModel() {
 
     private val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-
-    // --- State --- //
 
     val trainingState: StateFlow<TrainingState> = trainingRepository.trainingState
     val liveTrainingSession: StateFlow<LiveTrainingSession?> =
@@ -42,13 +36,9 @@ class HomeScreenViewModel(
 
     val searchSuggestions: StateFlow<List<SearchSuggestion>> = searchRepository.searchSuggestions
 
-    // Expose the route directly from the navigation repository.
-    // The UI will observe this to draw the route and show the "Start Training" button.
     val navigationRoutes = navigationRepository.navigationRoutes
 
     val finishedSessionId = trainingRepository.finishedSessionId
-
-    // --- Actions --- //
 
     fun onSearchQueryChanged(query: String) {
         _searchQuery.value = query
@@ -59,37 +49,21 @@ class HomeScreenViewModel(
         }
     }
 
-    /**
-     * Called when a user taps a search suggestion.
-     * This function orchestrates fetching the destination's coordinates, finding the route,
-     * and cleaning up the UI.
-     */
     fun onSuggestionSelected(suggestion: SearchSuggestion) {
-        // Launch a coroutine to handle the selection process asynchronously.
         viewModelScope.launch {
-            // First, tell the repository to select the suggestion. This will cause it
-            // to emit the full search result on its `searchResults` flow.
             searchRepository.onSuggestionSelected(suggestion)
 
-            // We collect just the first result that comes from the flow.
             val searchResult = searchRepository.searchResult.first { it != null } ?: return@launch
 
-
-            // Now that we have the destination, find the user's current location.
             fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                 location?.let {
                     val origin = Point.fromLngLat(it.longitude, it.latitude)
-                    // With both origin and destination, fetch the route.
-                    // The UI is already observing `directionsRoute` and will update automatically.
-
                     navigationRepository.fetchRoute(origin, searchResult.coordinate)
                 }
             }
 
-            // Set the search query to the selected suggestion's name and clear suggestions.
             _searchQuery.value = suggestion.name
             searchRepository.clear()
-
         }
     }
 
@@ -127,9 +101,6 @@ class HomeScreenViewModel(
         clearRoute()
     }
 
-    /**
-     * Clears the current route from the map and UI.
-     */
     fun clearRoute() {
         navigationRepository.clearRoute()
         clearSearch()
