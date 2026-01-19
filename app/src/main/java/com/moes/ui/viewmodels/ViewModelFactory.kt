@@ -11,8 +11,8 @@ class ViewModelFactory(private val context: Context) : ViewModelProvider.Factory
     private val app = context.applicationContext as MoesApplication
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(HomeScreenViewModel::class.java)) {
-            return HomeScreenViewModel(
+        if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
+            return HomeViewModel(
                 context = context,
                 trainingRepository = app.trainingRepository,
                 searchRepository = app.searchRepository,
