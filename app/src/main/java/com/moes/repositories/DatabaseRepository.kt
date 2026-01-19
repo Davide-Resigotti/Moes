@@ -2,6 +2,7 @@ package com.moes.repositories
 
 import com.moes.data.TrainingSession
 import com.moes.data.UserProfile
+import com.moes.data.UserStatistics
 import com.moes.data.local.StatisticsDao
 import com.moes.data.local.TrainingDao
 import com.moes.data.local.UserDao
@@ -85,6 +86,10 @@ class DatabaseRepository(
                 e.printStackTrace()
             }
         }
+    }
+
+    fun getUserStatisticsFlow(userId: String): Flow<UserStatistics?> {
+        return statisticsDao.getStatisticsFlow(userId)
     }
 
     private suspend fun updateLocalStatistics(session: TrainingSession) {

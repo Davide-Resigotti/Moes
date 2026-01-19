@@ -3,6 +3,7 @@ package com.moes.ui.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.moes.data.UserProfile
+import com.moes.data.UserStatistics
 import com.moes.repositories.AuthRepository
 import com.moes.repositories.DatabaseRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -40,6 +41,14 @@ class ProfileViewModel(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = UserProfile(userId = authRepository.currentUserIdSafe)
+    )
+
+    val userStatistics: StateFlow<UserStatistics?> = currentUserId.flatMapLatest { userId ->
+        databaseRepository.getUserStatisticsFlow(userId)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
     )
 
     fun saveProfile(
