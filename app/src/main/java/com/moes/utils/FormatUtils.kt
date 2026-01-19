@@ -73,6 +73,9 @@ object FormatUtils {
             MissionType.COUNT -> "$value"
             MissionType.DISTANCE -> "${(value / 1000)} km"
             MissionType.DURATION -> "${value / 3600000} h"
+            MissionType.STREAK -> "$value"
+            MissionType.OVER_5K -> "$value"
+            MissionType.OVER_10K -> "$value"
         }
     }
 }

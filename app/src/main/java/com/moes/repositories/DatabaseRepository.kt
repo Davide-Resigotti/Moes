@@ -2,9 +2,11 @@ package com.moes.repositories
 
 import com.moes.data.TrainingSession
 import com.moes.data.UserProfile
+import com.moes.data.local.StatisticsDao
 import com.moes.data.local.TrainingDao
 import com.moes.data.local.UserDao
 import com.moes.data.remote.FirestoreDataSource
+import com.moes.utils.StatisticsUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
@@ -13,8 +15,11 @@ import kotlinx.coroutines.withContext
 class DatabaseRepository(
     private val trainingDao: TrainingDao,
     private val userDao: UserDao,
+    private val statisticsDao: StatisticsDao,
     private val firestoreDataSource: FirestoreDataSource,
 ) {
+    // --- SESSIONS ---
+
     fun getSessionsForUser(userId: String): Flow<List<TrainingSession>> {
         return trainingDao.getSessionsForUser(userId)
     }
@@ -24,18 +29,23 @@ class DatabaseRepository(
     suspend fun saveTrainingSession(session: TrainingSession) {
         trainingDao.insertSession(session)
 
+        updateLocalStatistics(session)
+
+        // 3. Sync Cloud
         if (session.userId != AuthRepository.GUEST_ID) {
             try {
                 firestoreDataSource.saveSession(session)
                 trainingDao.markAsSynced(session.id)
+
+                syncUserStats(session.userId)
             } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
 
     suspend fun updateSessionTitle(id: String, title: String) {
         trainingDao.updateSessionTitle(id, title)
-
         val session = trainingDao.getSessionById(id)
 
         if (session != null && session.userId != AuthRepository.GUEST_ID) {
@@ -77,6 +87,12 @@ class DatabaseRepository(
         }
     }
 
+    private suspend fun updateLocalStatistics(session: TrainingSession) {
+        val currentStats = statisticsDao.getStatistics(session.userId)
+        val newStats = StatisticsUtils.calculateNewStatistics(currentStats, session)
+        statisticsDao.saveStatistics(newStats)
+    }
+
     suspend fun syncPendingSessions() {
         val unsyncedSessions = trainingDao.getUnsyncedSessions()
         if (unsyncedSessions.isEmpty()) return
@@ -95,6 +111,25 @@ class DatabaseRepository(
 
         if (successfulIds.isNotEmpty()) {
             trainingDao.markSessionsAsSynced(successfulIds)
+        }
+    }
+
+    private suspend fun syncUserStats(userId: String) {
+        try {
+            val local = statisticsDao.getStatistics(userId)
+            val remote = firestoreDataSource.getUserStatistics(userId)
+
+            if (remote == null) {
+                if (local != null) firestoreDataSource.saveUserStatistics(local)
+            } else {
+                if (local != null && local.lastEdited > remote.lastEdited) {
+                    firestoreDataSource.saveUserStatistics(local)
+                } else {
+                    statisticsDao.saveStatistics(remote)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -122,6 +157,9 @@ class DatabaseRepository(
                     userDao.saveUserProfile(remoteProfile)
                 }
             }
+
+            syncUserStats(userId)
+
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -131,6 +169,25 @@ class DatabaseRepository(
         withContext(Dispatchers.IO) {
             trainingDao.migrateGuestSessionsToUser(realUserId)
             userDao.migrateGuestProfile(realUserId)
+
+            val guestStats = statisticsDao.getStatistics(AuthRepository.GUEST_ID)
+            if (guestStats != null) {
+                var targetStats = statisticsDao.getStatistics(realUserId)
+
+                try {
+                    val remoteStats = firestoreDataSource.getUserStatistics(realUserId)
+                    if (remoteStats != null) {
+                        targetStats = remoteStats
+                    }
+                } catch (e: Exception) {
+                }
+
+                val mergedStats = StatisticsUtils.mergeStatistics(guestStats, targetStats)
+                    .copy(userId = realUserId)
+
+                statisticsDao.saveStatistics(mergedStats)
+                statisticsDao.deleteStatistics(AuthRepository.GUEST_ID)
+            }
 
             var localProfile = userDao.getUserProfile(realUserId).firstOrNull()
 
@@ -152,7 +209,9 @@ class DatabaseRepository(
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+
             syncPendingSessions()
+            syncUserStats(realUserId)
         }
     }
 }
