@@ -1,9 +1,7 @@
-package com.moes.ui.composables
+package com.moes.ui.composables.sessions
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,14 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.DirectionsBike
-import androidx.compose.material.icons.automirrored.filled.DirectionsRun
-import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -27,16 +20,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.moes.data.TrainingSession
-import com.moes.ui.theme.LogoGradientEnd
-import com.moes.ui.theme.LogoGradientStart
+import com.moes.ui.composables.utils.ActivityIcon
 import com.moes.utils.FormatUtils
 
 @Composable
@@ -106,32 +95,5 @@ fun SessionPillCard(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
             )
         }
-    }
-}
-
-@Composable
-fun ActivityIcon(speedKmh: Double) {
-    val (icon, description) = when {
-        speedKmh < 6.5 -> Icons.AutoMirrored.Filled.DirectionsWalk to "Camminata"
-        speedKmh < 20.0 -> Icons.AutoMirrored.Filled.DirectionsRun to "Corsa"
-        else -> Icons.AutoMirrored.Filled.DirectionsBike to "Ciclismo"
-    }
-
-    Box(
-        modifier = Modifier
-            .size(56.dp)
-            .clip(CircleShape)
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(LogoGradientStart, LogoGradientEnd)
-                )
-            ), contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = description,
-            tint = Color.White,
-            modifier = Modifier.size(28.dp)
-        )
     }
 }

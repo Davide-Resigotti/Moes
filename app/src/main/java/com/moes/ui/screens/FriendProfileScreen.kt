@@ -40,7 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.moes.repositories.GamificationRepository
-import com.moes.ui.composables.MissionCard
+import com.moes.ui.composables.profile.MissionCard
 import com.moes.ui.theme.LogoGradientEnd
 import com.moes.ui.theme.LogoGradientStart
 import com.moes.ui.viewmodels.SocialViewModel

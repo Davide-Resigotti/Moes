@@ -21,7 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.moes.ui.composables.SessionPillCard
+import com.moes.ui.composables.sessions.SessionPillCard
 import com.moes.ui.viewmodels.SessionsViewModel
 import com.moes.ui.viewmodels.ViewModelFactory
 

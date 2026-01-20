@@ -1,4 +1,4 @@
-package com.moes.ui.composables
+package com.moes.ui.composables.auth
 
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult

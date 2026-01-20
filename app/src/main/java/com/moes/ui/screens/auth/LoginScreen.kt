@@ -17,9 +17,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.moes.ui.composables.AuthForm
-import com.moes.ui.composables.GoogleLoginButton
-import com.moes.ui.composables.rememberGoogleLoginLauncher
+import com.moes.ui.composables.auth.AuthForm
+import com.moes.ui.composables.auth.GoogleLoginButton
+import com.moes.ui.composables.auth.rememberGoogleLoginLauncher
 import com.moes.ui.viewmodels.AuthViewModel
 
 @Composable

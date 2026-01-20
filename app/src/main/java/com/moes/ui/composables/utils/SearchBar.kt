@@ -1,4 +1,4 @@
-package com.moes.ui.composables
+package com.moes.ui.composables.utils
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column

@@ -1,4 +1,4 @@
-package com.moes.ui.composables
+package com.moes.ui.composables.auth
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -158,7 +158,7 @@ fun AuthForm(
 }
 
 @Composable
-fun MoesAuthTextField(
+private fun MoesAuthTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
@@ -168,7 +168,7 @@ fun MoesAuthTextField(
     trailingIcon: @Composable (() -> Unit)? = null
 ) {
     val focusManager = LocalFocusManager.current
-    
+
     Surface(
         shape = CircleShape,
         shadowElevation = 4.dp,
