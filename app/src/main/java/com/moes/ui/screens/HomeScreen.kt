@@ -2,6 +2,10 @@ package com.moes.ui.screens
 
 import android.annotation.SuppressLint
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -132,6 +138,11 @@ fun HomeScreen(
     var circleAnnotationManager by remember { mutableStateOf<CircleAnnotationManager?>(null) }
     var viewportDataSource by remember { mutableStateOf<MapboxNavigationViewportDataSource?>(null) }
     var navigationCamera by remember { mutableStateOf<NavigationCamera?>(null) }
+    
+    // Loading state - map is ready when both style is loaded AND we have a valid location
+    var isMapStyleLoaded by remember { mutableStateOf(false) }
+    var isFirstLocationReceived by remember { mutableStateOf(false) }
+    val isMapReady = isMapStyleLoaded && isFirstLocationReceived
     val routeLineApi = remember { MapboxRouteLineApi(MapboxRouteLineApiOptions.Builder().build()) }
     val routeLineView =
         remember { MapboxRouteLineView(MapboxRouteLineViewOptions.Builder(context).build()) }
@@ -175,7 +186,7 @@ fun HomeScreen(
 
     val locationObserver = remember(trainingState) {
         object : LocationObserver {
-            var firstLocationReceived = false
+            var firstLocationReceivedInternal = false
 
             override fun onNewRawLocation(rawLocation: Location) {
                 if (trainingState == TrainingState.IDLE) {
@@ -204,8 +215,9 @@ fun HomeScreen(
             }
 
             private fun updateCameraIfNeeded(location: Location) {
-                if (!firstLocationReceived) {
-                    firstLocationReceived = true
+                if (!firstLocationReceivedInternal) {
+                    firstLocationReceivedInternal = true
+                    isFirstLocationReceived = true  // Update Compose state for loading overlay
                     mapViewState.value?.camera?.easeTo(
                         CameraOptions.Builder()
                             .center(Point.fromLngLat(location.longitude, location.latitude))
@@ -312,7 +324,9 @@ fun HomeScreen(
                 logo.enabled = false
                 attribution.enabled = false
 
-                mapboxMap.loadStyle(mapStyleUri)
+                mapboxMap.loadStyle(mapStyleUri) {
+                    isMapStyleLoaded = true
+                }
 
                 circleAnnotationManager = annotations.createCircleAnnotationManager()
                 mapboxMap.setCamera(CameraOptions.Builder().zoom(16.5).build())
@@ -377,6 +391,24 @@ fun HomeScreen(
                 })
             }
         }, update = {})
+
+        // LOADING OVERLAY - shows until map style is loaded AND we have a valid location
+        AnimatedVisibility(
+            visible = !isMapReady,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
 
         // SEARCH BAR / INSTRUCTIONS
         Box(

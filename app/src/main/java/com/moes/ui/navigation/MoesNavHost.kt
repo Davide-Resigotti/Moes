@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -78,13 +79,34 @@ fun MoesNavHost() {
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-
-        NavHost(
-            navController = navController,
-            startDestination = Routes.HOME,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            composable(Routes.HOME) {
+        val navBackStackEntry by navController.currentBackStackEntryAsState()
+        val currentDestination = navBackStackEntry?.destination
+        
+        // Determine if we're on a main tab or a detail screen
+        val currentTabRoute = when {
+            currentDestination?.route == Routes.HOME -> Routes.HOME
+            currentDestination?.route == Routes.SESSIONS -> Routes.SESSIONS
+            currentDestination?.route == Routes.ACCOUNT -> Routes.ACCOUNT
+            // For detail screens, stay on the parent tab visually
+            currentDestination?.route?.startsWith(Routes.SESSIONS) == true -> Routes.SESSIONS
+            currentDestination?.route == Routes.AUTH -> Routes.ACCOUNT
+            else -> Routes.HOME
+        }
+        
+        // Pre-compute visibility flags once for efficiency
+        val isHome = currentTabRoute == Routes.HOME
+        val isSessions = currentTabRoute == Routes.SESSIONS
+        val isAccount = currentTabRoute == Routes.ACCOUNT
+        
+        // All tab screens are ALWAYS in composition from startup
+        // Only visibility changes via alpha - this eliminates loading flicker on first visit
+        Box(modifier = Modifier.fillMaxSize()) {
+            // HOME
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(if (isHome) 1f else 0f)
+            ) {
                 HomeScreen(
                     onNavigateToSummary = { sessionId ->
                         navController.navigate(Routes.SESSIONS) {
@@ -95,29 +117,57 @@ fun MoesNavHost() {
                             restoreState = true
                         }
                         navController.navigate(Routes.sessionDetail(sessionId))
-                    })
+                    }
+                )
             }
-
-            composable(Routes.ACCOUNT) {
+            
+            // SESSIONS
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(if (isSessions) 1f else 0f)
+            ) {
+                SessionsScreen(
+                    onSessionClick = { sessionId ->
+                        navController.navigate(Routes.sessionDetail(sessionId))
+                    }
+                )
+            }
+            
+            // ACCOUNT
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(if (isAccount) 1f else 0f)
+            ) {
                 AccountScreen(
                     onNavigateToAuth = {
                         navController.navigate(Routes.AUTH)
-                    })
+                    }
+                )
             }
+        }
 
+        // NavHost for detail/overlay screens only
+        NavHost(
+            navController = navController,
+            startDestination = Routes.HOME,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // Empty composables for main tabs - they're handled above
+            composable(Routes.HOME) { }
+            composable(Routes.SESSIONS) { }
+            composable(Routes.ACCOUNT) { }
+            
+            // Detail screens
             composable(Routes.AUTH) {
                 AuthScreen(
                     onLoginSuccess = {
                         navController.popBackStack()
-                    })
+                    }
+                )
             }
-
-            composable(Routes.SESSIONS) {
-                SessionsScreen(
-                    onSessionClick = { sessionId ->
-                        navController.navigate(Routes.sessionDetail(sessionId))
-                    })
-            }
+            
             composable(
                 route = Routes.SESSION_DETAIL,
                 arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
@@ -125,12 +175,11 @@ fun MoesNavHost() {
                 val sessionId =
                     backStackEntry.arguments?.getString("sessionId") ?: return@composable
                 SessionDetailScreen(
-                    sessionId = sessionId, onNavigateBack = { navController.popBackStack() })
+                    sessionId = sessionId, onNavigateBack = { navController.popBackStack() }
+                )
             }
         }
 
-        val navBackStackEntry by navController.currentBackStackEntryAsState()
-        val currentDestination = navBackStackEntry?.destination
         val showNavBar = items.any { it.route == currentDestination?.route }
 
         if (showNavBar) {
