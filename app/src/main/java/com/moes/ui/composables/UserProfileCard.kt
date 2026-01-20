@@ -41,11 +41,13 @@ import androidx.compose.ui.unit.sp
 import com.moes.data.UserProfile
 import com.moes.ui.theme.LogoGradientEnd
 import com.moes.ui.theme.LogoGradientStart
+import java.util.Calendar
 
 @Composable
 fun UserProfileCard(
     profile: UserProfile,
     streak: Int,
+    lastTrainingDate: Long,
     isGuest: Boolean,
     onMainActionClick: () -> Unit,
     onEdit: () -> Unit
@@ -56,12 +58,41 @@ fun UserProfileCard(
         if (first.isBlank() && last.isBlank()) "U" else (first + last).uppercase()
     }
 
-    val (showStreak, streakEmoji) = remember(streak) {
-        when (streak) {
-            100 -> true to "💯"
-            10 -> true to "🥳"
-            0 -> false to ""
-            else -> true to "🔥"
+    val (showStreak, streakEmoji) = remember(streak, lastTrainingDate) {
+        if (streak <= 0) return@remember false to ""
+
+        val now = System.currentTimeMillis()
+        val cal = Calendar.getInstance()
+
+        cal.timeInMillis = now
+        val todayDay = cal.get(Calendar.DAY_OF_YEAR)
+        val todayYear = cal.get(Calendar.YEAR)
+
+        cal.timeInMillis = lastTrainingDate
+        val lastDay = cal.get(Calendar.DAY_OF_YEAR)
+        val lastYear = cal.get(Calendar.YEAR)
+
+        val isTrainedToday = (todayDay == lastDay && todayYear == lastYear)
+
+        if (isTrainedToday) {
+            when {
+                streak >= 100 -> true to "💯"
+                streak >= 10 -> true to "🥳"
+                else -> true to "🔥"
+            }
+        } else {
+            cal.timeInMillis = now
+            val currentHour = cal.get(Calendar.HOUR_OF_DAY)
+            val hoursLeft = 24 - currentHour
+
+            when {
+                hoursLeft <= 2 -> true to "⌛"
+                hoursLeft <= 5 -> true to "⏳"
+
+                streak >= 100 -> true to "💯"
+                streak >= 10 -> true to "🥳"
+                else -> true to "🔥"
+            }
         }
     }
 
