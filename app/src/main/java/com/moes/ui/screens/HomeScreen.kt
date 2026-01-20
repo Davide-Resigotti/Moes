@@ -82,7 +82,6 @@ import com.moes.ui.composables.TrainingOverlay
 import com.moes.ui.viewmodels.HomeViewModel
 import com.moes.ui.viewmodels.ViewModelFactory
 import kotlinx.coroutines.delay
-
 @SuppressLint("MissingPermission", "RestrictedApi")
 @OptIn(ExperimentalPreviewMapboxNavigationAPI::class)
 @Composable
@@ -101,6 +100,7 @@ fun HomeScreen(
     var distanceText by remember { mutableStateOf("0") }
     var maneuver by remember { mutableStateOf<Maneuver?>(null) }
     var lastEnhancedLocation by remember { mutableStateOf<Location?>(null) }
+    var lastLocTime by remember { mutableStateOf(0L) }
 
     val isDarkTheme = isSystemInDarkTheme()
     val mapStyleUri = if (isDarkTheme) Style.DARK else Style.OUTDOORS
@@ -191,7 +191,7 @@ fun HomeScreen(
                 if (trainingState != TrainingState.IDLE) {
                     val enhanced = locationMatcherResult.enhancedLocation
                     lastEnhancedLocation = enhanced
-
+                    lastLocTime = System.currentTimeMillis()
                     navigationLocationProvider.changePosition(
                         location = enhanced, keyPoints = locationMatcherResult.keyPoints
                     )
@@ -252,11 +252,11 @@ fun HomeScreen(
 
         map.location.apply {
             enabled = true
-            puckBearingEnabled = true
-            puckBearing = if (trainingState == TrainingState.IDLE) {
-                PuckBearing.HEADING
-            } else {
-                PuckBearing.COURSE
+            puckBearingEnabled = trainingState != TrainingState.RUNNING
+
+            puckBearing = when {
+                trainingState == TrainingState.IDLE -> PuckBearing.HEADING
+                else -> PuckBearing.COURSE
             }
         }
 
@@ -452,21 +452,22 @@ fun HomeScreen(
                 // MY LOCATION BUTTON
                 FloatingActionButton(
                     onClick = {
-                        val currentLoc = lastEnhancedLocation
-
-                        if (currentLoc != null) {
-                            if (currentLoc.latitude == 0.0 && currentLoc.longitude == 0.0) {
-                                return@FloatingActionButton
-                            }
-
-                            mapViewState.value?.camera?.easeTo(
-                                CameraOptions.Builder().center(
-                                    Point.fromLngLat(
-                                        currentLoc.longitude, currentLoc.latitude
-                                    )
-                                ).build(),
-                            )
+                        // Usa SEMPRE l'ultima location valida dal provider Mapbox
+                        val currentLoc = navigationLocationProvider.lastLocation
+                        if (currentLoc == null) {
+                            Log.d("HomeScreen", "No valid location yet")
+                            return@FloatingActionButton
                         }
+
+                        Log.d("HomeScreen", "Centering to: ${currentLoc.latitude}, ${currentLoc.longitude}")
+
+                        mapViewState.value?.camera?.easeTo(
+                            CameraOptions.Builder()
+                                .center(Point.fromLngLat(currentLoc.longitude, currentLoc.latitude))
+                                .zoom(16.5)
+                                .build()
+                        )
+
                         if (trainingState == TrainingState.RUNNING || trainingState == TrainingState.PAUSED) {
                             navigationCamera?.requestNavigationCameraToFollowing()
                         } else {

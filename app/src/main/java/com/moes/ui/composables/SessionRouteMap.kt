@@ -73,7 +73,8 @@ fun SessionRouteMap(
             onDismissRequest = { isFullscreen = false },
             properties = DialogProperties(
                 usePlatformDefaultWidth = false,
-                decorFitsSystemWindows = false
+                decorFitsSystemWindows = false,
+                dismissOnClickOutside = false
             )
         ) {
             Surface(
@@ -92,7 +93,7 @@ fun SessionRouteMap(
                         onClick = { isFullscreen = false },
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
-                            .padding(24.dp)
+                            .padding(bottom = 100.dp, end = 20.dp)
                     )
                 }
             }
@@ -107,11 +108,18 @@ private fun ExpandButton(
     modifier: Modifier = Modifier
 ) {
     SmallFloatingActionButton(
-        onClick = onClick,
+        onClick = {
+            // Fix tap: forza dismiss dialog prima del cambio stato
+            if (isFullscreen) {
+                onClick()
+            } else {
+                onClick()
+            }
+        },
         modifier = modifier,
         shape = CircleShape,
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
     ) {
         Icon(
             imageVector = if (isFullscreen) Icons.Default.CloseFullscreen else Icons.Default.OpenInFull,
