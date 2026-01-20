@@ -51,7 +51,8 @@ object MissionsData {
             icon = Icons.Default.DirectionsRun,
             levels = listOf(
                 MissionLevel("Principiante", 10),
-                MissionLevel("Intermedio", 50),
+                MissionLevel("Intermedio", 25),
+                MissionLevel("Esperto", 50),
                 MissionLevel("Veterano", 100)
             )
         ),
@@ -64,9 +65,10 @@ object MissionsData {
             type = MissionType.DISTANCE,
             icon = Icons.Default.Speed,
             levels = listOf(
-                MissionLevel("Maratoneta", 50_000),
-                MissionLevel("Globetrotter", 500_000),
-                MissionLevel("Leggenda", 2_000_000)
+                MissionLevel("Maratoneta", 42_195), // 42 km
+                MissionLevel("Centurione", 100_000), // 100 km
+                MissionLevel("Globetrotter", 500_000), // 500 km
+                MissionLevel("Leggenda", 1_000_000) // 1000 km
             )
         ),
 
@@ -78,13 +80,14 @@ object MissionsData {
             type = MissionType.DURATION,
             icon = Icons.Default.Timer,
             levels = listOf(
-                MissionLevel("Appassionato", 36_000_000),
-                MissionLevel("Atleta", 180_000_000),
-                MissionLevel("Iron Man", 720_000_000)
+                MissionLevel("Riscaldamento", 36_000_000), // 10 ore
+                MissionLevel("Giornaliero", 86_400_000), // 24 ore
+                MissionLevel("Atleta", 180_000_000), // 50 ore
+                MissionLevel("Iron Man", 360_000_000) // 100 ore
             )
         ),
 
-        // 4. STREAK (Giorni Consecutivi)
+        // 4. STREAK
         MissionDefinition(
             id = "streak",
             baseTitle = "Non ti ferma nessuno",
@@ -93,12 +96,13 @@ object MissionsData {
             icon = Icons.Default.LocalFireDepartment,
             levels = listOf(
                 MissionLevel("Riscaldamento", 3),
-                MissionLevel("Inarrestabile", 7),
+                MissionLevel("Settimana di Fuoco", 7),
+                MissionLevel("Inarrestabile", 14),
                 MissionLevel("On Fire", 30)
             )
         ),
 
-        // 5. SESSIONI > 5KM
+        // 5. SESSIONI > 5KM (3 Livelli)
         MissionDefinition(
             id = "over_5k",
             baseTitle = "Mezzofondista",
@@ -107,12 +111,12 @@ object MissionsData {
             icon = Icons.Default.EmojiEvents,
             levels = listOf(
                 MissionLevel("Primi Passi", 5),
-                MissionLevel("Esperto", 20),
-                MissionLevel("Maestro", 50)
+                MissionLevel("Runner", 15),
+                MissionLevel("Maestro", 30)
             )
         ),
 
-        // 6. SESSIONI > 10KM
+        // 6. SESSIONI > 10KM (3 Livelli)
         MissionDefinition(
             id = "over_10k",
             baseTitle = "Fondista",
@@ -121,8 +125,8 @@ object MissionsData {
             icon = Icons.Default.EmojiEvents,
             levels = listOf(
                 MissionLevel("La Sfida", 1),
-                MissionLevel("Resistente", 10),
-                MissionLevel("Instancabile", 25)
+                MissionLevel("Resistente", 5),
+                MissionLevel("Instancabile", 10)
             )
         )
     )
