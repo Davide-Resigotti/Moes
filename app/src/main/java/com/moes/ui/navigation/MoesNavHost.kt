@@ -35,14 +35,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -53,15 +53,17 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.moes.routes.Routes
 import com.moes.ui.screens.AccountScreen
+import com.moes.ui.screens.FriendProfileScreen
 import com.moes.ui.screens.HomeScreen
 import com.moes.ui.screens.SessionDetailScreen
 import com.moes.ui.screens.SessionsScreen
+import com.moes.ui.screens.SocialScreen
 import com.moes.ui.screens.auth.AuthScreen
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Home : Screen(Routes.HOME, "Home", Icons.Filled.Home)
-    object Sessions : Screen(Routes.SESSIONS, "Sessions", Icons.Filled.History)
-    object Account : Screen(Routes.ACCOUNT, "Account", Icons.Filled.AccountCircle)
+    object Sessions : Screen(Routes.SESSIONS, "Storico", Icons.Filled.History)
+    object Account : Screen(Routes.ACCOUNT, "Profilo", Icons.Filled.AccountCircle)
 }
 
 @Composable
@@ -82,25 +84,20 @@ fun MoesNavHost() {
     ) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentDestination = navBackStackEntry?.destination
-        
-        // Determine if we're on a main tab or a detail screen
+
         val currentTabRoute = when {
             currentDestination?.route == Routes.HOME -> Routes.HOME
             currentDestination?.route == Routes.SESSIONS -> Routes.SESSIONS
             currentDestination?.route == Routes.ACCOUNT -> Routes.ACCOUNT
-            // For detail screens, stay on the parent tab visually
-            currentDestination?.route?.startsWith(Routes.SESSIONS) == true -> Routes.SESSIONS
+            currentDestination?.route?.startsWith("session_detail") == true -> Routes.SESSIONS
             currentDestination?.route == Routes.AUTH -> Routes.ACCOUNT
             else -> Routes.HOME
         }
-        
-        // Pre-compute visibility flags once for efficiency
+
         val isHome = currentTabRoute == Routes.HOME
         val isSessions = currentTabRoute == Routes.SESSIONS
         val isAccount = currentTabRoute == Routes.ACCOUNT
-        
-        // All tab screens are ALWAYS in composition from startup
-        // Visibility via alpha, touch handling via zIndex (active tab on top)
+
         Box(modifier = Modifier.fillMaxSize()) {
             // HOME
             Box(
@@ -119,10 +116,13 @@ fun MoesNavHost() {
                             restoreState = true
                         }
                         navController.navigate(Routes.sessionDetail(sessionId))
+                    },
+                    onNavigateToSocialRequests = {
+                        navController.navigate(Routes.social(tabIndex = 1))
                     }
                 )
             }
-            
+
             // SESSIONS
             Box(
                 modifier = Modifier
@@ -136,7 +136,7 @@ fun MoesNavHost() {
                     }
                 )
             }
-            
+
             // ACCOUNT
             Box(
                 modifier = Modifier
@@ -147,31 +147,32 @@ fun MoesNavHost() {
                 AccountScreen(
                     onNavigateToAuth = {
                         navController.navigate(Routes.AUTH)
+                    },
+                    onNavigateToSocialFriends = {
+                        navController.navigate(Routes.social(tabIndex = 0))
                     }
                 )
             }
         }
 
-        // NavHost for detail/overlay screens only
         NavHost(
             navController = navController,
             startDestination = Routes.HOME,
             modifier = Modifier.fillMaxSize()
         ) {
-            // Empty composables for main tabs - they're handled above
             composable(Routes.HOME) { }
             composable(Routes.SESSIONS) { }
             composable(Routes.ACCOUNT) { }
-            
-            // Detail screens
+
+            // AUTH
             composable(Routes.AUTH) {
                 AuthScreen(
                     onLoginSuccess = {
                         navController.popBackStack()
-                    }
-                )
+                    })
             }
-            
+
+            // DETTAGLIO SESSIONE
             composable(
                 route = Routes.SESSION_DETAIL,
                 arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
@@ -179,7 +180,38 @@ fun MoesNavHost() {
                 val sessionId =
                     backStackEntry.arguments?.getString("sessionId") ?: return@composable
                 SessionDetailScreen(
-                    sessionId = sessionId, onNavigateBack = { navController.popBackStack() }
+                    sessionId = sessionId,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            // SOCIAL
+            composable(
+                route = Routes.SOCIAL,
+                arguments = listOf(navArgument("tab") {
+                    type = NavType.IntType
+                    defaultValue = 0
+                })
+            ) { backStackEntry ->
+                val tab = backStackEntry.arguments?.getInt("tab") ?: 0
+                SocialScreen(
+                    initialTab = tab,
+                    onFriendClick = { friendId ->
+                        navController.navigate(Routes.friendProfile(friendId))
+                    }
+                )
+            }
+
+            // PROFILO AMICO
+            composable(
+                route = Routes.FRIEND_PROFILE,
+                arguments = listOf(navArgument("friendId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val friendId = backStackEntry.arguments?.getString("friendId") ?: return@composable
+
+                FriendProfileScreen(
+                    friendId = friendId,
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
         }

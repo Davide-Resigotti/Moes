@@ -10,7 +10,7 @@ import com.moes.data.UserStatistics
 
 @Database(
     entities = [TrainingSession::class, UserProfile::class, UserStatistics::class],
-    version = 5
+    version = 6
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun trainingDao(): TrainingDao
