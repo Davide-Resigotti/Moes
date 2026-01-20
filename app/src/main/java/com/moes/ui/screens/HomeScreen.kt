@@ -3,8 +3,11 @@ package com.moes.ui.screens
 import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -127,7 +130,8 @@ fun HomeScreen(
     var distanceText by remember { mutableStateOf("0") }
     var maneuver by remember { mutableStateOf<Maneuver?>(null) }
     var lastEnhancedLocation by remember { mutableStateOf<Location?>(null) }
-    var lastLocTime by remember { mutableStateOf(0L) }
+    var isSearchFocused by remember { mutableStateOf(false) }
+    val isSearchActive = isSearchFocused || searchQuery.isNotEmpty()
 
     val isDarkTheme = isSystemInDarkTheme()
     val mapStyleUri = if (isDarkTheme) Style.DARK else Style.OUTDOORS
@@ -223,7 +227,6 @@ fun HomeScreen(
                 if (trainingState != TrainingState.IDLE) {
                     val enhanced = locationMatcherResult.enhancedLocation
                     lastEnhancedLocation = enhanced
-                    lastLocTime = System.currentTimeMillis()
                     navigationLocationProvider.changePosition(
                         location = enhanced, keyPoints = locationMatcherResult.keyPoints
                     )
@@ -459,43 +462,55 @@ fun HomeScreen(
                             keyboardController?.hide()
                             homeViewModel.onSuggestionSelected(it)
                         },
+                        onFocusChange = { isSearchFocused = it },
                         modifier = Modifier.weight(1f)
                     )
 
-                    // Icona Notifiche (Solo se NON è guest)
-                    if (!isGuest) {
-                        Spacer(modifier = Modifier.width(12.dp))
+                    AnimatedVisibility(
+                        visible = !isSearchActive && !isGuest,
+                        enter = expandHorizontally(
+                            animationSpec = tween(300),
+                            expandFrom = Alignment.Start
+                        ) + fadeIn(animationSpec = tween(300)),
 
-                        // Surface circolare per l'icona
-                        Surface(
-                            shape = CircleShape,
-                            shadowElevation = 8.dp,
-                            color = MaterialTheme.colorScheme.surface,
-                            modifier = Modifier.size(56.dp) // Stessa altezza visuale della SearchBar (circa)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clickable { onNavigateToSocialRequests() },
-                                contentAlignment = Alignment.Center
+                        exit = shrinkHorizontally(
+                            animationSpec = tween(300),
+                            shrinkTowards = Alignment.Start
+                        ) + fadeOut(animationSpec = tween(300))
+                    ) {
+                        Row {
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Surface(
+                                shape = CircleShape,
+                                shadowElevation = 8.dp,
+                                color = MaterialTheme.colorScheme.surface,
+                                modifier = Modifier.size(56.dp)
                             ) {
-                                BadgedBox(
-                                    badge = {
-                                        if (incomingRequestsCount > 0) {
-                                            Badge(
-                                                containerColor = MaterialTheme.colorScheme.error,
-                                                contentColor = Color.White
-                                            ) {
-                                                Text(text = incomingRequestsCount.toString())
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clickable { onNavigateToSocialRequests() },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    BadgedBox(
+                                        badge = {
+                                            if (incomingRequestsCount > 0) {
+                                                Badge(
+                                                    containerColor = MaterialTheme.colorScheme.error,
+                                                    contentColor = Color.White
+                                                ) {
+                                                    Text(text = incomingRequestsCount.toString())
+                                                }
                                             }
                                         }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Notifications,
+                                            contentDescription = "Richieste Amicizia",
+                                            tint = if (incomingRequestsCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Notifications,
-                                        contentDescription = "Richieste Amicizia",
-                                        tint = if (incomingRequestsCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
                                 }
                             }
                         }
@@ -564,7 +579,10 @@ fun HomeScreen(
                             return@FloatingActionButton
                         }
 
-                        Log.d("HomeScreen", "Centering to: ${currentLoc.latitude}, ${currentLoc.longitude}")
+                        Log.d(
+                            "HomeScreen",
+                            "Centering to: ${currentLoc.latitude}, ${currentLoc.longitude}"
+                        )
 
                         mapViewState.value?.camera?.easeTo(
                             CameraOptions.Builder()
