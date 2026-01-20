@@ -3,6 +3,7 @@ package com.moes.utils
 import android.annotation.SuppressLint
 import com.moes.data.missions.MissionType
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -14,6 +15,18 @@ object FormatUtils {
     fun formatBirthDate(millis: Long): String {
         if (millis == 0L) return ""
         return SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(millis))
+    }
+
+    fun calculateAge(birthDate: Long): Int {
+        if (birthDate == 0L) return 0
+        val birth = Calendar.getInstance().apply { timeInMillis = birthDate }
+        val today = Calendar.getInstance()
+
+        var age = today.get(Calendar.YEAR) - birth.get(Calendar.YEAR)
+        if (today.get(Calendar.DAY_OF_YEAR) < birth.get(Calendar.DAY_OF_YEAR)) {
+            age--
+        }
+        return age
     }
 
     fun formatTime(millis: Long): String {
