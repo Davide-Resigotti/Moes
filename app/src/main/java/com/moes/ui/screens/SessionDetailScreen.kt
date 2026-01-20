@@ -90,6 +90,7 @@ fun SessionDetailScreen(
     if (showCalorieInfoDialog) {
         AlertDialog(
             onDismissRequest = { showCalorieInfoDialog = false },
+            containerColor = Color.White,  // ← SFONDO BIANCO
             icon = { Icon(Icons.Default.Info, contentDescription = null) },
             title = { Text("Calcolo Calorie") },
             text = {
