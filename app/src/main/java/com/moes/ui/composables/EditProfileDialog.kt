@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -27,11 +28,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.SelectableDates // Importante
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,11 +65,14 @@ fun EditProfileDialog(
     var genderExpanded by remember { mutableStateOf(false) }
     val genderOptions = mapOf("M" to "Uomo", "F" to "Donna", "O" to "Altro")
 
+    val isNameValid by remember(firstName) {
+        derivedStateOf { firstName.trim().isNotEmpty() }
+    }
+
     // DATE PICKER
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = if (birthDate > 0) birthDate else System.currentTimeMillis(),
-            // Questo oggetto blocca le date future
             selectableDates = object : SelectableDates {
                 override fun isSelectableDate(utcTimeMillis: Long): Boolean {
                     return utcTimeMillis <= System.currentTimeMillis()
@@ -113,13 +118,16 @@ fun EditProfileDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // CAMPI NOME / COGNOME
+                // CAMPO NOME (Obbligatorio)
                 MoesDialogTextField(
                     value = firstName,
                     onValueChange = { firstName = it },
-                    label = "Nome"
+                    label = "Nome *",
+                    isError = !isNameValid,
+                    supportingText = if (!isNameValid) "Il nome è obbligatorio" else null
                 )
 
+                // CAMPO COGNOME (Opzionale)
                 MoesDialogTextField(
                     value = lastName,
                     onValueChange = { lastName = it },
@@ -144,7 +152,7 @@ fun EditProfileDialog(
                     )
                 }
 
-                // DATA DI NASCITA (Cliccabile)
+                // DATA DI NASCITA
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -209,9 +217,11 @@ fun EditProfileDialog(
         confirmButton = {
             Button(
                 onClick = { onSave(firstName, lastName, weight, height, gender, birthDate) },
+                enabled = isNameValid,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
                 ),
                 shape = CircleShape
             ) {
@@ -232,7 +242,9 @@ private fun MoesDialogTextField(
     onValueChange: (String) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    isError: Boolean = false,
+    supportingText: String? = null
 ) {
     OutlinedTextField(
         value = value,
@@ -241,11 +253,20 @@ private fun MoesDialogTextField(
         modifier = modifier,
         singleLine = true,
         shape = RoundedCornerShape(16.dp),
+        isError = isError,
+        trailingIcon = if (isError) {
+            { Icon(Icons.Default.Error, "Error", tint = MaterialTheme.colorScheme.error) }
+        } else null,
+        supportingText = if (supportingText != null) {
+            { Text(supportingText, color = MaterialTheme.colorScheme.error) }
+        } else null,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = MaterialTheme.colorScheme.primary,
             unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
             focusedLabelColor = MaterialTheme.colorScheme.primary,
-            cursorColor = MaterialTheme.colorScheme.primary
+            cursorColor = MaterialTheme.colorScheme.primary,
+            errorBorderColor = MaterialTheme.colorScheme.error,
+            errorLabelColor = MaterialTheme.colorScheme.error
         ),
         keyboardOptions = keyboardOptions
     )
