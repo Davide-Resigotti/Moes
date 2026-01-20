@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -47,7 +48,8 @@ fun SearchBar(
     onQueryChanged: (String) -> Unit,
     suggestions: List<SearchSuggestion>,
     onSuggestionSelected: (SearchSuggestion) -> Unit,
-    modifier: Modifier
+    modifier: Modifier,
+    onFocusChange: (Boolean) -> Unit = {}
 ) {
     var internalQuery by remember { mutableStateOf(query) }
     val focusManager = LocalFocusManager.current
@@ -93,7 +95,9 @@ fun SearchBar(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .onFocusChanged { onFocusChange(it.isFocused) },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(
                         onSearch = { focusManager.clearFocus() }
