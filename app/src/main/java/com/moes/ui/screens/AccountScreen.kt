@@ -94,6 +94,7 @@ fun AccountScreen(
                 UserProfileCard(
                     profile = userProfile,
                     streak = userStats?.currentStreakDays ?: 0,
+                    lastTrainingDate = userStats?.lastTrainingDate ?: 0L,
                     isGuest = isGuest,
                     onMainActionClick = {
                         if (isGuest) {

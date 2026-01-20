@@ -7,8 +7,7 @@ import kotlin.math.max
 
 object StatisticsUtils {
     fun calculateNewStatistics(
-        currentStats: UserStatistics?,
-        newSession: TrainingSession
+        currentStats: UserStatistics?, newSession: TrainingSession
     ): UserStatistics {
         val base = currentStats ?: UserStatistics(userId = newSession.userId)
 
@@ -38,15 +37,31 @@ object StatisticsUtils {
             return guest.copy(userId = guest.userId, lastEdited = System.currentTimeMillis())
         }
 
+        val (oldStats, newStats) = if (guest.lastTrainingDate > target.lastTrainingDate) {
+            target to guest
+        } else {
+            guest to target
+        }
+
+        val diffDays = getDiffDays(oldStats.lastTrainingDate, newStats.lastTrainingDate)
+
+        val mergedCurrentStreak = if (diffDays == newStats.currentStreakDays.toLong()) {
+            oldStats.currentStreakDays + newStats.currentStreakDays
+        } else {
+            newStats.currentStreakDays
+        }
+
         val mergedStats = target.copy(
             totalSessions = target.totalSessions + guest.totalSessions,
             totalDurationMs = target.totalDurationMs + guest.totalDurationMs,
             totalDistanceMeters = target.totalDistanceMeters + guest.totalDistanceMeters,
             sessionsOver5km = target.sessionsOver5km + guest.sessionsOver5km,
             sessionsOver10km = target.sessionsOver10km + guest.sessionsOver10km,
-            lastTrainingDate = max(target.lastTrainingDate, guest.lastTrainingDate),
-            currentStreakDays = if (guest.lastTrainingDate > target.lastTrainingDate) guest.currentStreakDays else target.currentStreakDays,
-            longestStreakDays = max(guest.longestStreakDays, target.longestStreakDays),
+            lastTrainingDate = newStats.lastTrainingDate,
+            currentStreakDays = mergedCurrentStreak,
+            longestStreakDays = max(
+                max(guest.longestStreakDays, target.longestStreakDays), mergedCurrentStreak
+            ),
             lastEdited = System.currentTimeMillis()
         )
         return mergedStats
@@ -54,20 +69,23 @@ object StatisticsUtils {
 
     private fun calculateStreak(lastDateMs: Long, newDateMs: Long, currentStreak: Int): Int {
         if (lastDateMs == 0L) return 1
-
-        val lastDate = Calendar.getInstance().apply { timeInMillis = lastDateMs }
-        val newDate = Calendar.getInstance().apply { timeInMillis = newDateMs }
-
-        resetTime(lastDate)
-        resetTime(newDate)
-
-        val diffDays = (newDate.timeInMillis - lastDate.timeInMillis) / (24 * 60 * 60 * 1000)
+        val diffDays = getDiffDays(lastDateMs, newDateMs)
 
         return when (diffDays) {
             0L -> currentStreak
             1L -> currentStreak + 1
             else -> 1
         }
+    }
+
+    private fun getDiffDays(date1Ms: Long, date2Ms: Long): Long {
+        val cal1 = Calendar.getInstance().apply { timeInMillis = date1Ms }
+        val cal2 = Calendar.getInstance().apply { timeInMillis = date2Ms }
+
+        resetTime(cal1)
+        resetTime(cal2)
+
+        return (cal2.timeInMillis - cal1.timeInMillis) / (24 * 60 * 60 * 1000)
     }
 
     private fun resetTime(cal: Calendar) {
