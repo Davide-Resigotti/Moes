@@ -69,13 +69,19 @@ fun FriendsSummaryCard(
                 Spacer(modifier = Modifier.Companion.width(16.dp))
 
                 Column {
+                    val descriptionText = when (friendsCount) {
+                        0 -> "Nessun amico"
+                        1 -> "Hai 1 amico!"
+                        else -> "Hai $friendsCount amici!"
+                    }
+
                     Text(
                         text = "I tuoi Amici",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Companion.Bold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "$friendsCount amici connessi",
+                        text = descriptionText,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

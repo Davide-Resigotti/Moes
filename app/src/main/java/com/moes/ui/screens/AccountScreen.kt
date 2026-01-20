@@ -6,20 +6,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Login
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,7 +25,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.moes.ui.composables.profile.AccountHeader
 import com.moes.ui.composables.profile.EditProfileDialog
 import com.moes.ui.composables.profile.FriendsSummaryCard
-import com.moes.ui.composables.profile.MissionCard
 import com.moes.ui.composables.profile.PhysicalStatsCard
 import com.moes.ui.viewmodels.MissionsViewModel
 import com.moes.ui.viewmodels.ProfileViewModel
@@ -94,7 +82,14 @@ fun AccountScreen(
                     profile = userProfile,
                     streak = userStats?.currentStreakDays ?: 0,
                     lastTrainingDate = userStats?.lastTrainingDate ?: 0L,
-                    isGuest = isGuest
+                    isGuest = isGuest,
+                    onAuthClick = {
+                        if (isGuest) {
+                            onNavigateToAuth()
+                        } else {
+                            profileViewModel.logout()
+                        }
+                    }
                 )
             }
 
@@ -111,8 +106,7 @@ fun AccountScreen(
 
             // SEZIONE DATI FISICI
             item {
-                PhysicalStatsCard(
-                    profile = userProfile, onEdit = { showEditDialog = true })
+                PhysicalStatsCard(profile = userProfile, onEdit = { showEditDialog = true })
             }
 
             // SEZIONE MISSIONI
@@ -125,47 +119,6 @@ fun AccountScreen(
                     modifier = Modifier.padding(bottom = 8.dp, start = 4.dp),
                     color = MaterialTheme.colorScheme.onBackground
                 )
-            }
-
-            items(missions) { mission ->
-                MissionCard(progress = mission)
-            }
-
-            // LOGOUT BUTTON
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = {
-                        if (isGuest) {
-                            onNavigateToAuth()
-                        } else {
-                            profileViewModel.logout()
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isGuest) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.errorContainer,
-                        contentColor = if (isGuest) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onErrorContainer
-                    ),
-                    shape = CircleShape
-                ) {
-                    Icon(
-                        imageVector = if (isGuest) Icons.AutoMirrored.Filled.Login else Icons.AutoMirrored.Filled.Logout,
-                        contentDescription = null
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isGuest) "Accedi al tuo Account" else "Esci dall'Account",
-                        fontWeight = FontWeight.Bold
-                    )
-                }
             }
         }
     }
