@@ -1,4 +1,4 @@
-package com.moes.ui.composables.friends
+package com.moes.ui.composables.social
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

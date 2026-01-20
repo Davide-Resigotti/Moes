@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.moes.ui.composables.profile.AccountHeader
 import com.moes.ui.composables.profile.EditProfileDialog
-import com.moes.ui.composables.friends.FriendsSummaryCard
+import com.moes.ui.composables.social.FriendsSummaryCard
 import com.moes.ui.composables.profile.MissionCard
 import com.moes.ui.composables.profile.PhysicalStatsCard
 import com.moes.ui.viewmodels.MissionsViewModel
