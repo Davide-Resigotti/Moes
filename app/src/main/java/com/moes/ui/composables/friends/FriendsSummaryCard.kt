@@ -1,4 +1,4 @@
-package com.moes.ui.composables.profile
+package com.moes.ui.composables.friends
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
