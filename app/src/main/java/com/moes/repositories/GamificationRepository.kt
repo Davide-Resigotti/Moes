@@ -14,8 +14,13 @@ class GamificationRepository(
     fun getMissionsProgress(userId: String): Flow<List<MissionProgress>> {
         return statisticsDao.getStatisticsFlow(userId).map { statsOrNull ->
             val stats = statsOrNull ?: UserStatistics(userId = userId)
+            calculateMissions(stats)
+        }
+    }
 
-            MissionsData.allMissions.map { mission ->
+    companion object {
+        fun calculateMissions(stats: UserStatistics): List<MissionProgress> {
+            return MissionsData.allMissions.map { mission ->
 
                 val current = when (mission.type) {
                     MissionType.COUNT -> stats.totalSessions.toLong()

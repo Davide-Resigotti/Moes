@@ -37,6 +37,8 @@ class ProfileViewModel(
     val userProfile: StateFlow<UserProfile> = currentUserId.flatMapLatest { userId ->
         databaseRepository.getUserProfile(userId).map { profile ->
             val isGuest = userId == AuthRepository.GUEST_ID
+            val currentEmail = authRepository.currentUserEmail
+
             val isNameless = profile == null || profile.firstName.isBlank()
 
             if (isGuest && isNameless) {
@@ -55,11 +57,26 @@ class ProfileViewModel(
 
                 saveProfileInternal(newProfile)
                 newProfile
+
             } else if (profile == null) {
-                val emptyProfile = UserProfile(userId = userId)
+                val emptyProfile = UserProfile(
+                    userId = userId,
+                    email = currentEmail
+                )
+                saveProfileInternal(emptyProfile)
                 emptyProfile
+
             } else {
-                profile
+                if (!isGuest && profile.email.isBlank() && currentEmail.isNotBlank()) {
+                    val updatedProfile = profile.copy(
+                        email = currentEmail,
+                        lastEdited = System.currentTimeMillis()
+                    )
+                    saveProfileInternal(updatedProfile)
+                    updatedProfile
+                } else {
+                    profile
+                }
             }
         }
     }.stateIn(
