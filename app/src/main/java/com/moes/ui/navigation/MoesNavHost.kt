@@ -1,10 +1,13 @@
 package com.moes.ui.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -165,7 +168,21 @@ fun MoesNavHost() {
             composable(Routes.ACCOUNT) { }
 
             // AUTH
-            composable(Routes.AUTH) {
+            composable(
+                route = Routes.AUTH,
+                enterTransition = {
+                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(250)) + fadeIn(tween(200))
+                },
+                exitTransition = {
+                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(250)) + fadeOut(tween(200))
+                },
+                popEnterTransition = {
+                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(250)) + fadeIn(tween(200))
+                },
+                popExitTransition = {
+                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(250)) + fadeOut(tween(200))
+                }
+            ) {
                 AuthScreen(
                     onLoginSuccess = {
                         navController.popBackStack()
@@ -175,7 +192,19 @@ fun MoesNavHost() {
             // DETTAGLIO SESSIONE
             composable(
                 route = Routes.SESSION_DETAIL,
-                arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
+                arguments = listOf(navArgument("sessionId") { type = NavType.StringType }),
+                enterTransition = {
+                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(250)) + fadeIn(tween(200))
+                },
+                exitTransition = {
+                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(250)) + fadeOut(tween(200))
+                },
+                popEnterTransition = {
+                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(250)) + fadeIn(tween(200))
+                },
+                popExitTransition = {
+                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(250)) + fadeOut(tween(200))
+                }
             ) { backStackEntry ->
                 val sessionId =
                     backStackEntry.arguments?.getString("sessionId") ?: return@composable
@@ -191,7 +220,19 @@ fun MoesNavHost() {
                 arguments = listOf(navArgument("tab") {
                     type = NavType.IntType
                     defaultValue = 0
-                })
+                }),
+                enterTransition = {
+                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(250)) + fadeIn(tween(200))
+                },
+                exitTransition = {
+                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(250)) + fadeOut(tween(200))
+                },
+                popEnterTransition = {
+                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(250)) + fadeIn(tween(200))
+                },
+                popExitTransition = {
+                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(250)) + fadeOut(tween(200))
+                }
             ) { backStackEntry ->
                 val tab = backStackEntry.arguments?.getInt("tab") ?: 0
                 SocialScreen(
@@ -205,7 +246,19 @@ fun MoesNavHost() {
             // PROFILO AMICO
             composable(
                 route = Routes.FRIEND_PROFILE,
-                arguments = listOf(navArgument("friendId") { type = NavType.StringType })
+                arguments = listOf(navArgument("friendId") { type = NavType.StringType }),
+                enterTransition = {
+                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(250)) + fadeIn(tween(200))
+                },
+                exitTransition = {
+                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(250)) + fadeOut(tween(200))
+                },
+                popEnterTransition = {
+                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(250)) + fadeIn(tween(200))
+                },
+                popExitTransition = {
+                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(250)) + fadeOut(tween(200))
+                }
             ) { backStackEntry ->
                 val friendId = backStackEntry.arguments?.getString("friendId") ?: return@composable
 
