@@ -20,8 +20,6 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -53,36 +51,35 @@ fun SocialScreen(
     viewModel: SocialViewModel = viewModel(factory = ViewModelFactory(LocalContext.current))
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
     var selectedTab by remember { mutableIntStateOf(initialTab) }
     var showAddFriendDialog by remember { mutableStateOf(false) }
 
-    // Gestione Messaggi di Errore/Successo
     LaunchedEffect(uiState.error, uiState.successMessage) {
-        uiState.error?.let {
-            snackbarHostState.showSnackbar(it)
-            viewModel.clearMessages()
-        }
-        uiState.successMessage?.let {
-            snackbarHostState.showSnackbar(it)
+        if (uiState.successMessage != null) {
+            if (showAddFriendDialog) {
+                showAddFriendDialog = false
+            }
             viewModel.clearMessages()
         }
     }
 
     if (showAddFriendDialog) {
         AddFriendDialog(
-            onDismiss = { showAddFriendDialog = false },
+            isLoading = uiState.isLoading,
+            error = uiState.error,
+            onDismiss = {
+                viewModel.clearMessages()
+                showAddFriendDialog = false
+            },
             onSend = { email ->
                 viewModel.sendFriendRequest(email)
-                showAddFriendDialog = false
             }
         )
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            if (selectedTab == 0) { // Mostra FAB solo nel tab Amici
+            if (selectedTab == 0) {
                 FloatingActionButton(
                     onClick = { showAddFriendDialog = true },
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -100,7 +97,6 @@ fun SocialScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            // --- HEADER TITOLO ---
             Text(
                 text = "Community",
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
@@ -108,7 +104,6 @@ fun SocialScreen(
                 modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 16.dp)
             )
 
-            // --- TABS ---
             TabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = Color.Transparent,
@@ -129,7 +124,6 @@ fun SocialScreen(
                             Text("Richieste", fontWeight = FontWeight.SemiBold)
                             if (uiState.pendingRequests.isNotEmpty()) {
                                 Spacer(modifier = Modifier.width(6.dp))
-                                // Badge pallino rosso se ci sono richieste
                                 Box(
                                     modifier = Modifier
                                         .size(8.dp)
@@ -144,9 +138,8 @@ fun SocialScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- CONTENUTO TAB ---
             Box(modifier = Modifier.fillMaxSize()) {
-                if (uiState.isLoading && uiState.friends.isEmpty() && uiState.pendingRequests.isEmpty()) {
+                if (uiState.isLoading && uiState.friends.isEmpty() && uiState.pendingRequests.isEmpty() && !showAddFriendDialog) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 } else {
                     when (selectedTab) {

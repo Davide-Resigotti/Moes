@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.moes.data.social.FriendRequest
 
-// --- TAB RICHIESTE ---
 @Composable
 fun FriendRequestsTab(
     requests: List<FriendRequest>,
