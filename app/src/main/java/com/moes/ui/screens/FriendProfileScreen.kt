@@ -54,13 +54,14 @@ fun FriendProfileScreen(
     onNavigateBack: () -> Unit,
     viewModel: SocialViewModel = viewModel(factory = ViewModelFactory(LocalContext.current))
 ) {
-    // 1. Recupera Info Base (Nome, Since) dalla cache del ViewModel
-    val friendInfo = remember(friendId) { viewModel.getFriendInfo(friendId) }
+    val socialUiState by viewModel.uiState.collectAsState()
 
-    // 2. Recupera Statistiche (Missioni) dal Cloud
+    val friendInfo = remember(socialUiState.friends, friendId) {
+        socialUiState.friends.find { it.userId == friendId }
+    }
+
     val friendStats by viewModel.getFriendStats(friendId).collectAsState(initial = null)
 
-    // 3. Calcola Missioni
     val friendMissions = remember(friendStats) {
         if (friendStats != null) {
             GamificationRepository.calculateMissions(friendStats!!)
@@ -69,8 +70,8 @@ fun FriendProfileScreen(
         }
     }
 
-    val displayName = friendInfo?.displayName ?: "Caricamento..."
-    val initials = displayName.take(1).uppercase()
+    val displayName = friendInfo?.displayName ?: "Utente"
+    val initials = if (displayName.isNotEmpty()) displayName.take(1).uppercase() else "?"
     val sinceDate = friendInfo?.since ?: 0L
 
     Scaffold(
@@ -90,101 +91,113 @@ fun FriendProfileScreen(
             )
         }
     ) { padding ->
-        if (friendInfo == null && friendStats == null) {
-            // Fallback se l'utente arriva qui ma i dati non sono pronti (raro)
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+        when (friendInfo) {
+            null if socialUiState.isLoading -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // --- HEADER ---
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Box(
+
+            null -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Utente non trovato o rimosso dagli amici.")
+                }
+            }
+
+            else -> {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentPadding = PaddingValues(bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // HEADER
+                    item {
+                        Column(
                             modifier = Modifier
-                                .size(100.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    brush = Brush.linearGradient(
-                                        colors = listOf(LogoGradientStart, LogoGradientEnd)
-                                    )
-                                ),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(
-                                text = initials,
-                                style = MaterialTheme.typography.displayMedium.copy(
-                                    fontWeight = FontWeight.Bold, color = Color.White
+                            Box(
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(LogoGradientStart, LogoGradientEnd)
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = initials,
+                                    style = MaterialTheme.typography.displayMedium.copy(
+                                        fontWeight = FontWeight.Bold, color = Color.White
+                                    )
                                 )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text(
+                                text = displayName,
+                                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onBackground
                             )
+
+                            if (sinceDate > 0) {
+                                Text(
+                                    text = "Amici dal ${FormatUtils.formatDate(sinceDate)}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
+                    }
 
-                        Spacer(modifier = Modifier.height(16.dp))
-
+                    // MISSIONI
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = displayName,
-                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                            text = "Missioni e Traguardi",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.padding(horizontal = 24.dp),
                             color = MaterialTheme.colorScheme.onBackground
                         )
+                    }
 
-                        if (sinceDate > 0) {
+                    if (friendStats == null) {
+                        item {
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(100.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(32.dp),
+                                    strokeWidth = 3.dp
+                                )
+                            }
+                        }
+                    } else if (friendMissions.isEmpty()) {
+                        item {
                             Text(
-                                text = "Amici dal ${FormatUtils.formatDate(sinceDate)}",
-                                style = MaterialTheme.typography.bodyMedium,
+                                text = "Nessuna missione completata.",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(24.dp),
+                                textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                    }
-                }
-
-                // --- MISSIONI ---
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Missioni e Traguardi",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier.padding(horizontal = 24.dp),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-
-                if (friendStats == null) {
-                    item {
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .height(100.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    }
-                } else if (friendMissions.isEmpty()) {
-                    item {
-                        Text(
-                            text = "Nessuna missione completata.",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    items(friendMissions) { mission ->
-                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                            MissionCard(progress = mission)
+                    } else {
+                        items(friendMissions) { mission ->
+                            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                MissionCard(progress = mission)
+                            }
                         }
                     }
                 }
