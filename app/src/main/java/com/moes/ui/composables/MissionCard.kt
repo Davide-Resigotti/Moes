@@ -210,13 +210,13 @@ fun LevelBadge(levelIndex: Int, totalLevels: Int, isCompleted: Boolean) {
     val backgroundColor = if (isCompleted) {
         BrandSecondary.copy(alpha = 0.2f)
     } else {
-        MaterialTheme.colorScheme.primaryContainer
+        MaterialTheme.colorScheme.surfaceVariant
     }
 
     val textColor = if (isCompleted) {
         BrandSecondary
     } else {
-        MaterialTheme.colorScheme.primary
+        MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Surface(

@@ -4,14 +4,22 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Login
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,15 +28,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.moes.ui.composables.AccountHeader
 import com.moes.ui.composables.EditProfileDialog
 import com.moes.ui.composables.MissionCard
-import com.moes.ui.composables.UserProfileCard
+import com.moes.ui.composables.PhysicalStatsCard
 import com.moes.ui.viewmodels.MissionsViewModel
 import com.moes.ui.viewmodels.ProfileViewModel
 import com.moes.ui.viewmodels.ViewModelFactory
@@ -53,8 +61,7 @@ fun AccountScreen(
             onSave = { first, last, weight, height, gender, birthDate ->
                 profileViewModel.saveProfile(first, last, weight, height, gender, birthDate)
                 showEditDialog = false
-            }
-        )
+            })
     }
 
     Box(
@@ -72,42 +79,27 @@ fun AccountScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
-            // --- SEZIONE PROFILO ---
             item {
                 Spacer(modifier = Modifier.height(24.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp, start = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Profilo",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
+            }
 
-                UserProfileCard(
+            // SEZIONE ACCOUNT
+            item {
+                AccountHeader(
                     profile = userProfile,
                     streak = userStats?.currentStreakDays ?: 0,
                     lastTrainingDate = userStats?.lastTrainingDate ?: 0L,
-                    isGuest = isGuest,
-                    onMainActionClick = {
-                        if (isGuest) {
-                            onNavigateToAuth()
-                        } else {
-                            profileViewModel.logout()
-                        }
-                    },
-                    onEdit = { showEditDialog = true }
+                    isGuest = isGuest
                 )
             }
 
-            // --- SEZIONE MISSIONI ---
+            // SEZIONE DATI FISICI
+            item {
+                PhysicalStatsCard(
+                    profile = userProfile, onEdit = { showEditDialog = true })
+            }
+
+            // SEZIONE MISSIONI
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
@@ -121,6 +113,43 @@ fun AccountScreen(
 
             items(missions) { mission ->
                 MissionCard(progress = mission)
+            }
+
+            // LOGOUT BUTTON
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(
+                    onClick = {
+                        if (isGuest) {
+                            onNavigateToAuth()
+                        } else {
+                            profileViewModel.logout()
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isGuest) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.errorContainer,
+                        contentColor = if (isGuest) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onErrorContainer
+                    ),
+                    shape = CircleShape
+                ) {
+                    Icon(
+                        imageVector = if (isGuest) Icons.AutoMirrored.Filled.Login else Icons.AutoMirrored.Filled.Logout,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isGuest) "Accedi al tuo Account" else "Esci dall'Account",
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }
