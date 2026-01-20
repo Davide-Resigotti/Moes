@@ -428,7 +428,7 @@ fun HomeScreen(
         AnimatedVisibility(
             visible = !isMapReady,
             enter = fadeIn(),
-            exit = fadeOut()
+            exit = fadeOut(animationSpec = tween(200))
         ) {
             Box(
                 modifier = Modifier
@@ -469,14 +469,14 @@ fun HomeScreen(
                     AnimatedVisibility(
                         visible = !isSearchActive && !isGuest,
                         enter = expandHorizontally(
-                            animationSpec = tween(300),
+                            animationSpec = tween(200),
                             expandFrom = Alignment.Start
-                        ) + fadeIn(animationSpec = tween(300)),
+                        ) + fadeIn(animationSpec = tween(200)),
 
                         exit = shrinkHorizontally(
-                            animationSpec = tween(300),
+                            animationSpec = tween(200),
                             shrinkTowards = Alignment.Start
-                        ) + fadeOut(animationSpec = tween(300))
+                        ) + fadeOut(animationSpec = tween(200))
                     ) {
                         Row {
                             Spacer(modifier = Modifier.width(12.dp))

@@ -231,7 +231,7 @@ fun SessionDetailScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(20.dp),
                         color = MaterialTheme.colorScheme.surface,
-                        shadowElevation = 2.dp,
+                        tonalElevation = 1.dp,
                     ) {
                         Column(
                             modifier = Modifier.padding(vertical = 16.dp, horizontal = 20.dp),
@@ -356,7 +356,7 @@ fun FullWidthStatCard(label: String, mainText: String, subText: String) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 2.dp,
+        tonalElevation = 1.dp,
     ) {
         Column(
             modifier = Modifier.padding(vertical = 16.dp, horizontal = 20.dp),
@@ -388,7 +388,7 @@ fun CalorieStatCard(kcal: String, onInfoClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 2.dp,
+        tonalElevation = 1.dp,
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             Column(
@@ -449,7 +449,7 @@ fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
         modifier = modifier,
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 2.dp,
+        tonalElevation = 1.dp,
     ) {
         Column(
             modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp),
