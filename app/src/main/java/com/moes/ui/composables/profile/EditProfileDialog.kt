@@ -1,4 +1,4 @@
-package com.moes.ui.composables
+package com.moes.ui.composables.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -48,6 +48,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.moes.data.UserProfile
 import com.moes.utils.FormatUtils
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,7 +83,7 @@ fun EditProfileDialog(
                 }
 
                 override fun isSelectableYear(year: Int): Boolean {
-                    return year <= java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+                    return year <= Calendar.getInstance().get(Calendar.YEAR)
                 }
             }
         )

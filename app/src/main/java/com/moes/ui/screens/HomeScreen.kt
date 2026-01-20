@@ -43,7 +43,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -95,9 +94,9 @@ import com.mapbox.navigation.ui.maps.route.line.api.MapboxRouteLineView
 import com.mapbox.navigation.ui.maps.route.line.model.MapboxRouteLineApiOptions
 import com.mapbox.navigation.ui.maps.route.line.model.MapboxRouteLineViewOptions
 import com.moes.data.TrainingState
-import com.moes.ui.composables.InstructionBanner
-import com.moes.ui.composables.SearchBar
-import com.moes.ui.composables.TrainingOverlay
+import com.moes.ui.composables.utils.InstructionBanner
+import com.moes.ui.composables.utils.SearchBar
+import com.moes.ui.composables.utils.TrainingOverlay
 import com.moes.ui.viewmodels.HomeViewModel
 import com.moes.ui.viewmodels.ProfileViewModel
 import com.moes.ui.viewmodels.SocialViewModel

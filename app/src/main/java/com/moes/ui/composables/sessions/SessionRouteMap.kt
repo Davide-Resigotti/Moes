@@ -1,4 +1,4 @@
-package com.moes.ui.composables
+package com.moes.ui.composables.sessions
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box

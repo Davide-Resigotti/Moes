@@ -1,4 +1,4 @@
-package com.moes.ui.composables
+package com.moes.ui.composables.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -211,7 +211,7 @@ fun MissionCard(progress: MissionProgress) {
 }
 
 @Composable
-fun LevelBadge(
+private fun LevelBadge(
     levelIndex: Int,
     totalLevels: Int,
     isCompleted: Boolean

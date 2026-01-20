@@ -1,4 +1,4 @@
-package com.moes.ui.composables
+package com.moes.ui.composables.auth
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Spacer
