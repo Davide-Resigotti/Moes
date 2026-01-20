@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.moes.ui.composables.profile.AccountHeader
 import com.moes.ui.composables.profile.EditProfileDialog
 import com.moes.ui.composables.profile.FriendsSummaryCard
+import com.moes.ui.composables.profile.MissionCard
 import com.moes.ui.composables.profile.PhysicalStatsCard
 import com.moes.ui.viewmodels.MissionsViewModel
 import com.moes.ui.viewmodels.ProfileViewModel
@@ -119,6 +121,10 @@ fun AccountScreen(
                     modifier = Modifier.padding(bottom = 8.dp, start = 4.dp),
                     color = MaterialTheme.colorScheme.onBackground
                 )
+            }
+
+            items(missions) { mission ->
+                MissionCard(progress = mission)
             }
         }
     }
