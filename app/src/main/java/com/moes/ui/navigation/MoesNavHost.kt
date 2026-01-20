@@ -239,7 +239,8 @@ fun MoesNavHost() {
                     initialTab = tab,
                     onFriendClick = { friendId ->
                         navController.navigate(Routes.friendProfile(friendId))
-                    }
+                    },
+                    onBack = { navController.popBackStack() }
                 )
             }
 
