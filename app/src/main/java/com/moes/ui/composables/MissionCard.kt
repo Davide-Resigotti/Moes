@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,7 +41,30 @@ fun MissionCard(progress: MissionProgress) {
     val rawProgress = progress.progressFloat
 
     val currentLevelInfo = def.levels[progress.currentLevelIndex]
-    val levelTitle = if (isCompleted) "Maestro" else currentLevelInfo.title
+
+    val levelTitleText = currentLevelInfo.title
+
+    val levelTitleColor = MaterialTheme.colorScheme.primary
+
+    val currentFormattedValue = remember(progress.currentValue, def.type) {
+        FormatUtils.formatMissionValue(def.type, progress.currentValue)
+    }
+
+    val descriptionText = if (isCompleted) {
+        val lastThreshold = def.levels.last().threshold
+        val targetFormatted = FormatUtils.formatMissionValue(def.type, lastThreshold)
+        String.format(def.descriptionTemplate, targetFormatted)
+    } else {
+        val targetFormatted = FormatUtils.formatMissionValue(def.type, progress.currentLevelTarget)
+        String.format(def.descriptionTemplate, targetFormatted)
+    }
+
+    val counterText = if (isCompleted) {
+        currentFormattedValue
+    } else {
+        val targetText = FormatUtils.formatMissionValue(def.type, progress.currentLevelTarget)
+        "$currentFormattedValue / $targetText"
+    }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -79,14 +103,14 @@ fun MissionCard(progress: MissionProgress) {
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // TESTI
+                // TESTI CENTRALI
                 Column(modifier = Modifier.weight(1f)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Titolo Missione (es. "Costanza")
+                        // Titolo Missione
                         Text(
                             text = def.baseTitle,
                             style = MaterialTheme.typography.titleMedium.copy(
@@ -96,7 +120,7 @@ fun MissionCard(progress: MissionProgress) {
                             color = MaterialTheme.colorScheme.onSurface
                         )
 
-                        // BADGE LIVELLO (Pillola)
+                        // Badge Livello
                         LevelBadge(
                             levelIndex = progress.currentLevelIndex,
                             totalLevels = def.levels.size,
@@ -104,40 +128,31 @@ fun MissionCard(progress: MissionProgress) {
                         )
                     }
 
-                    // Sottotitolo Livello (es. "Livello 1: Principiante")
+                    // Nome del Livello
                     Text(
-                        text = if (isCompleted) "Missione Completata!" else levelTitle,
+                        text = levelTitleText,
                         style = MaterialTheme.typography.labelMedium.copy(
                             fontWeight = FontWeight.SemiBold,
-                            color = if (isCompleted) BrandSecondary else MaterialTheme.colorScheme.primary
+                            color = levelTitleColor
                         )
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    // Descrizione dinamica (es. "Completa 10 allenamenti")
-                    if (!isCompleted) {
-                        val targetFormatted =
-                            FormatUtils.formatMissionValue(def.type, progress.currentLevelTarget)
-                        Text(
-                            text = String.format(
-                                def.descriptionTemplate,
-                                targetFormatted
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            lineHeight = 14.sp
-                        )
-                    }
+                    // Descrizione o Record
+                    Text(
+                        text = descriptionText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 14.sp
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- PROGRESS BAR ---
-            // Se completato, barra piena oro. Altrimenti calcolata.
-            val visualProgress =
-                if (isCompleted) 1f else rawProgress.coerceIn(0.02f, 1f)
+            // BARRA DI PROGRESSO
+            val visualProgress = if (isCompleted) 1f else rawProgress.coerceIn(0.02f, 1f)
 
             Row(
                 modifier = Modifier
@@ -177,17 +192,13 @@ fun MissionCard(progress: MissionProgress) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // TESTO COUNTER
+            // CONTATORE
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                val currentText = FormatUtils.formatMissionValue(def.type, progress.currentValue)
-                val targetText =
-                    FormatUtils.formatMissionValue(def.type, progress.currentLevelTarget)
-
                 Text(
-                    text = if (isCompleted) "MAX" else "$currentText / $targetText",
+                    text = counterText,
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
                         fontFeatureSettings = "tnum"
@@ -200,11 +211,15 @@ fun MissionCard(progress: MissionProgress) {
 }
 
 @Composable
-fun LevelBadge(levelIndex: Int, totalLevels: Int, isCompleted: Boolean) {
+fun LevelBadge(
+    levelIndex: Int,
+    totalLevels: Int,
+    isCompleted: Boolean
+) {
     val displayText = if (isCompleted) {
         "MAX"
     } else {
-        "LVL ${levelIndex + 1}"
+        "LVL ${levelIndex + 1}/$totalLevels"
     }
 
     val backgroundColor = if (isCompleted) {
