@@ -94,4 +94,39 @@ object StatisticsUtils {
         cal.set(Calendar.SECOND, 0)
         cal.set(Calendar.MILLISECOND, 0)
     }
+
+    fun getStreakStatus(streak: Int, lastTrainingDate: Long): Pair<Boolean, String> {
+        if (streak <= 0) return false to ""
+
+        val now = System.currentTimeMillis()
+        val cal = Calendar.getInstance()
+
+        cal.timeInMillis = now
+        val todayDay = cal.get(Calendar.DAY_OF_YEAR)
+        val todayYear = cal.get(Calendar.YEAR)
+        val currentHour = cal.get(Calendar.HOUR_OF_DAY)
+
+        cal.timeInMillis = lastTrainingDate
+        val lastDay = cal.get(Calendar.DAY_OF_YEAR)
+        val lastYear = cal.get(Calendar.YEAR)
+
+        val isTrainedToday = (todayDay == lastDay && todayYear == lastYear)
+
+        return if (isTrainedToday) {
+            when {
+                streak >= 100 -> true to "💯"
+                streak >= 10 -> true to "🥳"
+                else -> true to "🔥"
+            }
+        } else {
+            val hoursLeft = 24 - currentHour
+            when {
+                hoursLeft <= 2 -> true to "⌛"
+                hoursLeft <= 5 -> true to "⏳"
+                streak >= 100 -> true to "💯"
+                streak >= 10 -> true to "🥳"
+                else -> true to "🔥"
+            }
+        }
+    }
 }
