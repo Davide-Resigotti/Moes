@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -99,12 +100,13 @@ fun MoesNavHost() {
         val isAccount = currentTabRoute == Routes.ACCOUNT
         
         // All tab screens are ALWAYS in composition from startup
-        // Only visibility changes via alpha - this eliminates loading flicker on first visit
+        // Visibility via alpha, touch handling via zIndex (active tab on top)
         Box(modifier = Modifier.fillMaxSize()) {
             // HOME
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .zIndex(if (isHome) 1f else 0f)
                     .alpha(if (isHome) 1f else 0f)
             ) {
                 HomeScreen(
@@ -125,6 +127,7 @@ fun MoesNavHost() {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .zIndex(if (isSessions) 1f else 0f)
                     .alpha(if (isSessions) 1f else 0f)
             ) {
                 SessionsScreen(
@@ -138,6 +141,7 @@ fun MoesNavHost() {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .zIndex(if (isAccount) 1f else 0f)
                     .alpha(if (isAccount) 1f else 0f)
             ) {
                 AccountScreen(

@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -56,6 +57,7 @@ import com.mapbox.maps.plugin.annotation.generated.createCircleAnnotationManager
 import com.mapbox.maps.plugin.attribution.attribution
 import com.mapbox.maps.plugin.compass.compass
 import com.mapbox.maps.plugin.gestures.OnMoveListener
+import com.mapbox.maps.plugin.gestures.addOnMapClickListener
 import com.mapbox.maps.plugin.gestures.addOnMapLongClickListener
 import com.mapbox.maps.plugin.gestures.addOnMoveListener
 import com.mapbox.maps.plugin.locationcomponent.createDefault2DPuck
@@ -309,6 +311,7 @@ fun HomeScreen(
     }
 
     val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
     val navBarHeight = 64.dp
     val navBarBottomMargin = 24.dp
     val navBarHorizontalMargin = 24.dp
@@ -384,11 +387,18 @@ fun HomeScreen(
                 mapboxMap.addOnMoveListener(object : OnMoveListener {
                     override fun onMoveBegin(detector: MoveGestureDetector) {
                         navigationCamera?.requestNavigationCameraToIdle()
+                        focusManager.clearFocus()  // Clear focus when dragging the map
                     }
 
                     override fun onMove(detector: MoveGestureDetector): Boolean = false
                     override fun onMoveEnd(detector: MoveGestureDetector) {}
                 })
+                
+                // Clear focus when tapping on the map
+                mapboxMap.addOnMapClickListener {
+                    focusManager.clearFocus()
+                    true
+                }
             }
         }, update = {})
 
