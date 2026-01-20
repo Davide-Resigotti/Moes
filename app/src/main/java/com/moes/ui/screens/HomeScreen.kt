@@ -2,21 +2,31 @@ package com.moes.ui.screens
 
 import android.annotation.SuppressLint
 import android.util.Log
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -28,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -80,6 +91,8 @@ import com.moes.ui.composables.InstructionBanner
 import com.moes.ui.composables.SearchBar
 import com.moes.ui.composables.TrainingOverlay
 import com.moes.ui.viewmodels.HomeViewModel
+import com.moes.ui.viewmodels.ProfileViewModel
+import com.moes.ui.viewmodels.SocialViewModel
 import com.moes.ui.viewmodels.ViewModelFactory
 import kotlinx.coroutines.delay
 
@@ -87,15 +100,21 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalPreviewMapboxNavigationAPI::class)
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModel = viewModel(factory = ViewModelFactory(LocalContext.current)),
-    onNavigateToSummary: (String) -> Unit
+    homeViewModel: HomeViewModel = viewModel(factory = ViewModelFactory(LocalContext.current)),
+    socialViewModel: SocialViewModel = viewModel(factory = ViewModelFactory(LocalContext.current)),
+    profileViewModel: ProfileViewModel = viewModel(factory = ViewModelFactory(LocalContext.current)),
+    onNavigateToSummary: (String) -> Unit,
+    onNavigateToSocialRequests: () -> Unit
 ) {
-    val navigationRoutes by viewModel.navigationRoutes.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val searchSuggestions by viewModel.searchSuggestions.collectAsState()
-    val trainingState by viewModel.trainingState.collectAsState()
-    val liveTrainingSession by viewModel.liveTrainingSession.collectAsState()
-    val finishedSessionId by viewModel.finishedSessionId.collectAsState()
+    val navigationRoutes by homeViewModel.navigationRoutes.collectAsState()
+    val searchQuery by homeViewModel.searchQuery.collectAsState()
+    val searchSuggestions by homeViewModel.searchSuggestions.collectAsState()
+    val trainingState by homeViewModel.trainingState.collectAsState()
+    val liveTrainingSession by homeViewModel.liveTrainingSession.collectAsState()
+    val finishedSessionId by homeViewModel.finishedSessionId.collectAsState()
+    val socialUiState by socialViewModel.uiState.collectAsState()
+    val isGuest by profileViewModel.isGuest.collectAsState()
+    val incomingRequestsCount = socialUiState.pendingRequests.size
 
     var instructionText by remember { mutableStateOf("Ricerca percorso...") }
     var distanceText by remember { mutableStateOf("0") }
@@ -219,7 +238,7 @@ fun HomeScreen(
     LaunchedEffect(finishedSessionId) {
         finishedSessionId?.let { id ->
             onNavigateToSummary(id)
-            viewModel.clearFinishedSessionEvent()
+            homeViewModel.clearFinishedSessionEvent()
         }
     }
 
@@ -362,7 +381,7 @@ fun HomeScreen(
                                 .withCircleColor("#f06529").withCircleStrokeWidth(2.0)
                                 .withCircleStrokeColor("#ffffff")
                         circleAnnotationManager?.create(circleAnnotationOptions)
-                        viewModel.requestRouteToPoint(point)
+                        homeViewModel.requestRouteToPoint(point)
                     }
                     true
                 }
@@ -386,16 +405,60 @@ fun HomeScreen(
                 .padding(top = 16.dp, start = navBarHorizontalMargin, end = navBarHorizontalMargin)
         ) {
             if (trainingState == TrainingState.IDLE) {
-                SearchBar(
-                    query = searchQuery,
-                    onQueryChanged = { viewModel.onSearchQueryChanged(it) },
-                    suggestions = searchSuggestions,
-                    onSuggestionSelected = {
-                        keyboardController?.hide()
-                        viewModel.onSuggestionSelected(it)
-                    },
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
-                )
+                ) {
+                    SearchBar(
+                        query = searchQuery,
+                        onQueryChanged = { homeViewModel.onSearchQueryChanged(it) },
+                        suggestions = searchSuggestions,
+                        onSuggestionSelected = {
+                            keyboardController?.hide()
+                            homeViewModel.onSuggestionSelected(it)
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    // Icona Notifiche (Solo se NON è guest)
+                    if (!isGuest) {
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        // Surface circolare per l'icona
+                        Surface(
+                            shape = CircleShape,
+                            shadowElevation = 8.dp,
+                            color = MaterialTheme.colorScheme.surface,
+                            modifier = Modifier.size(56.dp) // Stessa altezza visuale della SearchBar (circa)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clickable { onNavigateToSocialRequests() },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                BadgedBox(
+                                    badge = {
+                                        if (incomingRequestsCount > 0) {
+                                            Badge(
+                                                containerColor = MaterialTheme.colorScheme.error,
+                                                contentColor = Color.White
+                                            ) {
+                                                Text(text = incomingRequestsCount.toString())
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Notifications,
+                                        contentDescription = "Richieste Amicizia",
+                                        tint = if (incomingRequestsCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             } else if (navigationRoutes.isNotEmpty()) {
                 InstructionBanner(
                     instruction = instructionText,
@@ -427,7 +490,7 @@ fun HomeScreen(
                 // CLEAR BUTTON
                 FloatingActionButton(
                     onClick = {
-                        viewModel.clearRoute()
+                        homeViewModel.clearRoute()
                         viewportDataSource?.clearRouteData()
                         circleAnnotationManager?.deleteAll()
                         val currentLoc = lastEnhancedLocation
@@ -491,7 +554,7 @@ fun HomeScreen(
                     .padding(bottom = buttonsBottomPadding)
             ) {
                 FloatingActionButton(
-                    onClick = { viewModel.onStartTraining() },
+                    onClick = { homeViewModel.onStartTraining() },
                     shape = CircleShape,
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
@@ -515,10 +578,10 @@ fun HomeScreen(
                     duration = liveDuration,
                     distance = liveTrainingSession?.totalDistance() ?: 0.0,
                     pace = livePace,
-                    onPauseClick = { viewModel.onPauseTraining() },
-                    onResumeClick = { viewModel.onResumeTraining() },
+                    onPauseClick = { homeViewModel.onPauseTraining() },
+                    onResumeClick = { homeViewModel.onResumeTraining() },
                     onStopClick = {
-                        viewModel.onStopTraining()
+                        homeViewModel.onStopTraining()
                         navigationCamera?.requestNavigationCameraToOverview()
                     })
             }

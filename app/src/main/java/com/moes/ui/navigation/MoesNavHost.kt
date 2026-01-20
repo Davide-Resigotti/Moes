@@ -51,15 +51,17 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.moes.routes.Routes
 import com.moes.ui.screens.AccountScreen
+import com.moes.ui.screens.FriendProfileScreen
 import com.moes.ui.screens.HomeScreen
 import com.moes.ui.screens.SessionDetailScreen
 import com.moes.ui.screens.SessionsScreen
+import com.moes.ui.screens.SocialScreen
 import com.moes.ui.screens.auth.AuthScreen
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Home : Screen(Routes.HOME, "Home", Icons.Filled.Home)
-    object Sessions : Screen(Routes.SESSIONS, "Sessions", Icons.Filled.History)
-    object Account : Screen(Routes.ACCOUNT, "Account", Icons.Filled.AccountCircle)
+    object Sessions : Screen(Routes.SESSIONS, "Storico", Icons.Filled.History)
+    object Account : Screen(Routes.ACCOUNT, "Profilo", Icons.Filled.AccountCircle)
 }
 
 @Composable
@@ -95,14 +97,22 @@ fun MoesNavHost() {
                             restoreState = true
                         }
                         navController.navigate(Routes.sessionDetail(sessionId))
-                    })
+                    },
+                    onNavigateToSocialRequests = {
+                        navController.navigate(Routes.social(tabIndex = 1))
+                    }
+                )
             }
 
             composable(Routes.ACCOUNT) {
                 AccountScreen(
                     onNavigateToAuth = {
                         navController.navigate(Routes.AUTH)
-                    })
+                    },
+                    onNavigateToSocialFriends = {
+                        navController.navigate(Routes.social(tabIndex = 0))
+                    }
+                )
             }
 
             composable(Routes.AUTH) {
@@ -126,6 +136,32 @@ fun MoesNavHost() {
                     backStackEntry.arguments?.getString("sessionId") ?: return@composable
                 SessionDetailScreen(
                     sessionId = sessionId, onNavigateBack = { navController.popBackStack() })
+            }
+            composable(
+                route = Routes.SOCIAL,
+                arguments = listOf(navArgument("tab") {
+                    type = NavType.IntType
+                    defaultValue = 0
+                })
+            ) { backStackEntry ->
+                val tab = backStackEntry.arguments?.getInt("tab") ?: 0
+                SocialScreen(
+                    initialTab = tab,
+                    onFriendClick = { friendId ->
+                        navController.navigate(Routes.friendProfile(friendId))
+                    }
+                )
+            }
+            composable(
+                route = Routes.FRIEND_PROFILE,
+                arguments = listOf(navArgument("friendId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val friendId = backStackEntry.arguments?.getString("friendId") ?: return@composable
+
+                FriendProfileScreen(
+                    friendId = friendId,
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
         }
 

@@ -18,15 +18,8 @@ class AuthRepository {
     val currentUserId: String
         get() = auth.currentUser?.uid ?: throw IllegalStateException("User ID not found!")
 
-    suspend fun initializeAuth() {
-        if (auth.currentUser == null) {
-            try {
-                auth.signInAnonymously().await()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
+    val currentUserEmail: String
+        get() = auth.currentUser?.email ?: ""
 
     fun signOut() {
         auth.signOut()
