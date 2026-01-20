@@ -41,7 +41,27 @@ class SocialRepository(
             val targetUser = firestoreDataSource.getUserByEmail(emailClean)
                 ?: return Result.failure(Exception("Utente non trovato con questa email"))
 
-            if (targetUser.userId == userId) return Result.failure(Exception("Non puoi inviare la richiesta a te stesso"))
+            if (targetUser.userId == userId) {
+                return Result.failure(Exception("Non puoi inviare la richiesta a te stesso"))
+            }
+
+            val areAlreadyFriends =
+                firestoreDataSource.checkFriendshipExists(userId, targetUser.userId)
+            if (areAlreadyFriends) {
+                return Result.failure(Exception("Siete già amici!"))
+            }
+
+            val pendingOutgoing =
+                firestoreDataSource.checkOutgoingRequestExists(userId, targetUser.userId)
+            if (pendingOutgoing) {
+                return Result.failure(Exception("Hai già inviato una richiesta a questo utente."))
+            }
+
+            val pendingIncoming =
+                firestoreDataSource.checkIncomingRequestExists(targetUser.userId, userId)
+            if (pendingIncoming) {
+                return Result.failure(Exception("Questo utente ti ha già inviato una richiesta. Controlla le richieste ricevute."))
+            }
 
             val myProfile = databaseRepository.getUserProfile(userId).firstOrNull()
                 ?: return Result.failure(Exception("Impossibile recuperare il tuo profilo."))

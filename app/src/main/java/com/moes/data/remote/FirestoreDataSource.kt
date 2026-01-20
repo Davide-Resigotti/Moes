@@ -178,6 +178,38 @@ class FirestoreDataSource {
         batch.commit().await()
     }
 
+    suspend fun checkFriendshipExists(userId: String, friendId: String): Boolean {
+        val doc = db.collection("users")
+            .document(userId)
+            .collection("friends")
+            .document(friendId)
+            .get()
+            .await()
+        return doc.exists()
+    }
+
+    suspend fun checkIncomingRequestExists(fromUserId: String, toUserId: String): Boolean {
+        val snapshot = db.collection("friend_requests")
+            .whereEqualTo("fromUserId", fromUserId)
+            .whereEqualTo("toUserId", toUserId)
+            .whereEqualTo("status", "PENDING")
+            .limit(1)
+            .get()
+            .await()
+        return !snapshot.isEmpty
+    }
+
+    suspend fun checkOutgoingRequestExists(fromUserId: String, toUserId: String): Boolean {
+        val snapshot = db.collection("friend_requests")
+            .whereEqualTo("fromUserId", fromUserId)
+            .whereEqualTo("toUserId", toUserId)
+            .whereEqualTo("status", "PENDING")
+            .limit(1)
+            .get()
+            .await()
+        return !snapshot.isEmpty
+    }
+
     fun getIncomingRequestsFlow(myUserId: String): Flow<List<FriendRequest>> = callbackFlow {
         val registration = db.collection("friend_requests").whereEqualTo("toUserId", myUserId)
             .whereEqualTo("status", "PENDING").addSnapshotListener { snapshot, error ->
