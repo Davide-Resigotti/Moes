@@ -15,9 +15,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Login
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -39,7 +42,11 @@ import java.util.Calendar
 
 @Composable
 fun AccountHeader(
-    profile: UserProfile, streak: Int, lastTrainingDate: Long, isGuest: Boolean
+    profile: UserProfile,
+    streak: Int,
+    lastTrainingDate: Long,
+    isGuest: Boolean,
+    onAuthClick: () -> Unit
 ) {
     val initials = remember(profile.firstName, profile.lastName) {
         val first = profile.firstName.take(1)
@@ -83,92 +90,111 @@ fun AccountHeader(
     }
 
     Surface(
-        modifier = Modifier.Companion.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 2.dp
     ) {
         Row(
-            modifier = Modifier.Companion.padding(20.dp),
-            verticalAlignment = Alignment.Companion.CenterVertically
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             // AVATAR
-            Box(contentAlignment = Alignment.Companion.BottomCenter) {
-                // Avatar
+            Box(contentAlignment = Alignment.BottomCenter) {
+                // Avatar Circle
                 Box(
-                    modifier = Modifier.Companion
-                        .size(72.dp)
+                    modifier = Modifier
+                        .size(60.dp)
                         .clip(CircleShape)
                         .background(
-                            brush = Brush.Companion.linearGradient(
+                            brush = Brush.linearGradient(
                                 colors = listOf(LogoGradientStart, LogoGradientEnd)
                             )
-                        ), contentAlignment = Alignment.Companion.Center
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = initials, style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Companion.Bold, letterSpacing = 1.sp
-                        ), color = Color.Companion.White
+                        text = initials,
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        ),
+                        color = Color.White
                     )
                 }
 
                 // Badge Streak
                 if (showStreak) {
                     Box(
-                        modifier = Modifier.Companion
+                        modifier = Modifier
                             .offset(y = 8.dp)
                             .shadow(4.dp, CircleShape)
-                            .border(
-                                2.dp, MaterialTheme.colorScheme.surface, CircleShape
-                            )
+                            .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
                             .clip(CircleShape)
                             .background(
-                                brush = Brush.Companion.linearGradient(
+                                brush = Brush.linearGradient(
                                     colors = listOf(LogoGradientStart, LogoGradientEnd)
                                 )
                             )
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                            .padding(
+                                horizontal = 8.dp,
+                                vertical = 3.dp
+                            )
                     ) {
-                        Row(verticalAlignment = Alignment.Companion.CenterVertically) {
-                            Text(text = streakEmoji, fontSize = 12.sp)
-                            Spacer(modifier = Modifier.Companion.width(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = streakEmoji, fontSize = 10.sp)
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "$streak", style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Companion.Bold, fontSize = 12.sp
-                                ), color = Color.Companion.White
+                                text = "$streak",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp
+                                ),
+                                color = Color.White
                             )
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.Companion.width(20.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
             // NOME E INFO
-            Column(modifier = Modifier.Companion.weight(1f)) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = displayName,
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Companion.Bold),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                Spacer(modifier = Modifier.Companion.height(4.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 // Stato Sync
-                Row(verticalAlignment = Alignment.Companion.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = if (isGuest) Icons.Default.CloudOff else Icons.Default.CloudDone,
                         contentDescription = null,
                         tint = if (isGuest) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.Companion.size(14.dp)
+                        modifier = Modifier.size(14.dp)
                     )
-                    Spacer(modifier = Modifier.Companion.width(4.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = if (isGuest) "Non sincronizzato" else "Sincronizzato",
                         style = MaterialTheme.typography.bodySmall,
                         color = if (isGuest) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+
+            // LOGIN/LOGOUT
+            IconButton(onClick = onAuthClick) {
+                Icon(
+                    imageVector = if (isGuest) Icons.AutoMirrored.Filled.Login else Icons.AutoMirrored.Filled.Logout,
+                    contentDescription = if (isGuest) "Accedi" else "Esci",
+                    tint = if (isGuest) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error.copy(
+                        alpha = 0.6f
+                    )
+                )
             }
         }
     }
