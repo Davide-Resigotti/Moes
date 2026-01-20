@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.moes.ui.composables.profile.AccountHeader
 import com.moes.ui.composables.profile.EditProfileDialog
 import com.moes.ui.composables.profile.FriendsSummaryCard
 import com.moes.ui.composables.profile.MissionCard
