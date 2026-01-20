@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.sp
 import com.moes.data.UserProfile
 import com.moes.ui.theme.LogoGradientEnd
 import com.moes.ui.theme.LogoGradientStart
-import java.util.Calendar
+import com.moes.utils.StatisticsUtils
 
 @Composable
 fun AccountHeader(
@@ -57,36 +57,7 @@ fun AccountHeader(
     val displayName = "${profile.firstName} ${profile.lastName}".trim()
 
     val (showStreak, streakEmoji) = remember(streak, lastTrainingDate) {
-        if (streak <= 0) return@remember false to ""
-        val now = System.currentTimeMillis()
-        val cal = Calendar.getInstance()
-        cal.timeInMillis = now
-        val todayDay = cal.get(Calendar.DAY_OF_YEAR)
-        val todayYear = cal.get(Calendar.YEAR)
-
-        cal.timeInMillis = lastTrainingDate
-        val lastDay = cal.get(Calendar.DAY_OF_YEAR)
-        val lastYear = cal.get(Calendar.YEAR)
-
-        val isTrainedToday = (todayDay == lastDay && todayYear == lastYear)
-
-        if (isTrainedToday) {
-            when {
-                streak >= 100 -> true to "💯"
-                streak >= 10 -> true to "🥳"
-                else -> true to "🔥"
-            }
-        } else {
-            val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-            val hoursLeft = 24 - currentHour
-            when {
-                hoursLeft <= 2 -> true to "⌛"
-                hoursLeft <= 5 -> true to "⏳"
-                streak >= 100 -> true to "💯"
-                streak >= 10 -> true to "🥳"
-                else -> true to "🔥"
-            }
-        }
+        StatisticsUtils.getStreakStatus(streak, lastTrainingDate)
     }
 
     Surface(
