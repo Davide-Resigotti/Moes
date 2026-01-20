@@ -35,22 +35,27 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.moes.ui.composables.AccountHeader
 import com.moes.ui.composables.EditProfileDialog
+import com.moes.ui.composables.FriendsSummaryCard
 import com.moes.ui.composables.MissionCard
 import com.moes.ui.composables.PhysicalStatsCard
 import com.moes.ui.viewmodels.MissionsViewModel
 import com.moes.ui.viewmodels.ProfileViewModel
+import com.moes.ui.viewmodels.SocialViewModel
 import com.moes.ui.viewmodels.ViewModelFactory
 
 @Composable
 fun AccountScreen(
     onNavigateToAuth: () -> Unit,
+    onNavigateToSocialFriends: () -> Unit,
     missionsViewModel: MissionsViewModel = viewModel(factory = ViewModelFactory(LocalContext.current)),
-    profileViewModel: ProfileViewModel = viewModel(factory = ViewModelFactory(LocalContext.current))
+    profileViewModel: ProfileViewModel = viewModel(factory = ViewModelFactory(LocalContext.current)),
+    socialViewModel: SocialViewModel = viewModel(factory = ViewModelFactory(LocalContext.current))
 ) {
     val missions by missionsViewModel.missions.collectAsState()
     val userProfile by profileViewModel.userProfile.collectAsState()
     val isGuest by profileViewModel.isGuest.collectAsState()
     val userStats by profileViewModel.userStatistics.collectAsState()
+    val socialState by socialViewModel.uiState.collectAsState()
 
     var showEditDialog by remember { mutableStateOf(false) }
 
@@ -91,6 +96,17 @@ fun AccountScreen(
                     lastTrainingDate = userStats?.lastTrainingDate ?: 0L,
                     isGuest = isGuest
                 )
+            }
+
+            // LISTA AMICI
+            if (!isGuest) {
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    FriendsSummaryCard(
+                        friendsCount = socialState.friends.size,
+                        onClick = onNavigateToSocialFriends
+                    )
+                }
             }
 
             // SEZIONE DATI FISICI

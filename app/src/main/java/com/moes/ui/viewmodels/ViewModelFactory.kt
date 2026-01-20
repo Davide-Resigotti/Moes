@@ -52,6 +52,13 @@ class ViewModelFactory(private val context: Context) : ViewModelProvider.Factory
             ) as T
         }
 
+        if (modelClass.isAssignableFrom(SocialViewModel::class.java)) {
+            return SocialViewModel(
+                app.socialRepository,
+                app.authRepository
+            ) as T
+        }
+
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }
