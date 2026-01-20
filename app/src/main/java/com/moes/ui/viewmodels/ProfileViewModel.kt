@@ -6,6 +6,7 @@ import com.moes.data.UserProfile
 import com.moes.data.UserStatistics
 import com.moes.repositories.AuthRepository
 import com.moes.repositories.DatabaseRepository
+import com.moes.utils.BerghemNameGenerator
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -35,7 +36,31 @@ class ProfileViewModel(
 
     val userProfile: StateFlow<UserProfile> = currentUserId.flatMapLatest { userId ->
         databaseRepository.getUserProfile(userId).map { profile ->
-            profile ?: UserProfile(userId = userId)
+            val isGuest = userId == AuthRepository.GUEST_ID
+            val isNameless = profile == null || profile.firstName.isBlank()
+
+            if (isGuest && isNameless) {
+                val (genName, genSurname) = BerghemNameGenerator.generate()
+
+                val newProfile = profile?.copy(
+                    firstName = genName,
+                    lastName = genSurname,
+                    lastEdited = System.currentTimeMillis()
+                ) ?: UserProfile(
+                    userId = userId,
+                    firstName = genName,
+                    lastName = genSurname,
+                    lastEdited = System.currentTimeMillis()
+                )
+
+                saveProfileInternal(newProfile)
+                newProfile
+            } else if (profile == null) {
+                val emptyProfile = UserProfile(userId = userId)
+                emptyProfile
+            } else {
+                profile
+            }
         }
     }.stateIn(
         scope = viewModelScope,
@@ -59,6 +84,8 @@ class ProfileViewModel(
         gender: String,
         birthDate: Long
     ) {
+        if (firstName.isBlank()) return;
+
         viewModelScope.launch {
             val w = weight.trim().toFloatOrNull() ?: 0f
             val h = height.trim().toFloatOrNull() ?: 0f
@@ -77,6 +104,12 @@ class ProfileViewModel(
                 lastEdited = System.currentTimeMillis()
             )
             databaseRepository.saveUserProfile(updatedProfile)
+        }
+    }
+
+    private fun saveProfileInternal(profile: UserProfile) {
+        viewModelScope.launch {
+            databaseRepository.saveUserProfile(profile)
         }
     }
 

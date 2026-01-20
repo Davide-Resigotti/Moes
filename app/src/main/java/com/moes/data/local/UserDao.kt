@@ -17,4 +17,7 @@ interface UserDao {
 
     @Query("UPDATE OR IGNORE user_profile SET userId = :realUserId WHERE userId = 'moes_guest_user'")
     suspend fun migrateGuestProfile(realUserId: String)
+
+    @Query("DELETE FROM user_profile WHERE userId = :userId")
+    suspend fun deleteUserProfile(userId: String)
 }

@@ -173,12 +173,10 @@ class DatabaseRepository(
     suspend fun migrateGuestData(realUserId: String) {
         withContext(Dispatchers.IO) {
             trainingDao.migrateGuestSessionsToUser(realUserId)
-            userDao.migrateGuestProfile(realUserId)
 
             val guestStats = statisticsDao.getStatistics(AuthRepository.GUEST_ID)
             if (guestStats != null) {
                 var targetStats = statisticsDao.getStatistics(realUserId)
-
                 try {
                     val remoteStats = firestoreDataSource.getUserStatistics(realUserId)
                     if (remoteStats != null) {
@@ -191,11 +189,13 @@ class DatabaseRepository(
                     .copy(userId = realUserId)
 
                 statisticsDao.saveStatistics(mergedStats)
-                statisticsDao.deleteStatistics(AuthRepository.GUEST_ID)
             }
 
-            var localProfile = userDao.getUserProfile(realUserId).firstOrNull()
+            statisticsDao.deleteStatistics(AuthRepository.GUEST_ID)
 
+            userDao.migrateGuestProfile(realUserId)
+
+            var localProfile = userDao.getUserProfile(realUserId).firstOrNull()
             try {
                 val remoteProfile = firestoreDataSource.getUserProfile(realUserId)
                 if (remoteProfile == null) {
@@ -214,6 +214,8 @@ class DatabaseRepository(
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+
+            userDao.deleteUserProfile(AuthRepository.GUEST_ID)
 
             syncPendingSessions()
             syncUserStats(realUserId)
