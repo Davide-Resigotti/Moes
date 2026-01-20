@@ -452,8 +452,8 @@ fun HomeScreen(
                 // MY LOCATION BUTTON
                 FloatingActionButton(
                     onClick = {
-                        // Usa SEMPRE l'ultima location valida dal provider Mapbox
-                        val currentLoc = navigationLocationProvider.lastLocation
+                        // Use lastEnhancedLocation which is consistently updated in both IDLE and training states
+                        val currentLoc = lastEnhancedLocation
                         if (currentLoc == null) {
                             Log.d("HomeScreen", "No valid location yet")
                             return@FloatingActionButton
@@ -471,7 +471,10 @@ fun HomeScreen(
                         if (trainingState == TrainingState.RUNNING || trainingState == TrainingState.PAUSED) {
                             navigationCamera?.requestNavigationCameraToFollowing()
                         } else {
-                            navigationCamera?.requestNavigationCameraToOverview()
+                            // Use requestNavigationCameraToIdle() in IDLE state to prevent the navigation camera
+                            // from overriding our manual camera animation (overview mode without a route
+                            // would animate to an empty/default bounding box at 0,0)
+                            navigationCamera?.requestNavigationCameraToIdle()
                         }
                     },
                     shape = CircleShape,
