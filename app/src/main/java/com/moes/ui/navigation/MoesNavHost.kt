@@ -92,7 +92,11 @@ fun MoesNavHost() {
             currentDestination?.route == Routes.HOME -> Routes.HOME
             currentDestination?.route == Routes.SESSIONS -> Routes.SESSIONS
             currentDestination?.route == Routes.ACCOUNT -> Routes.ACCOUNT
-            currentDestination?.route?.startsWith("session_detail") == true -> Routes.SESSIONS
+            currentDestination?.route?.startsWith("session_detail") == true -> {
+                val source = navBackStackEntry?.arguments?.getString("source")
+                if (source == "home") Routes.HOME else Routes.SESSIONS
+            }
+
             currentDestination?.route == Routes.AUTH -> Routes.ACCOUNT
             currentDestination?.route == Routes.SOCIAL -> {
                 val tabIndex = navBackStackEntry?.arguments?.getInt("tab") ?: 0
@@ -117,14 +121,7 @@ fun MoesNavHost() {
             ) {
                 HomeScreen(
                     onNavigateToSummary = { sessionId ->
-                        navController.navigate(Routes.SESSIONS) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                        navController.navigate(Routes.sessionDetail(sessionId))
+                        navController.navigate(Routes.sessionDetail(sessionId, source = "home"))
                     },
                     onNavigateToSocialRequests = {
                         navController.navigate(Routes.social(tabIndex = 1))
@@ -210,7 +207,10 @@ fun MoesNavHost() {
             // DETTAGLIO SESSIONE
             composable(
                 route = Routes.SESSION_DETAIL,
-                arguments = listOf(navArgument("sessionId") { type = NavType.StringType }),
+                arguments = listOf(
+                    navArgument("sessionId") { type = NavType.StringType },
+                    navArgument("source") { type = NavType.StringType; defaultValue = "sessions" }
+                ),
                 enterTransition = {
                     slideIntoContainer(
                         AnimatedContentTransitionScope.SlideDirection.Start,
