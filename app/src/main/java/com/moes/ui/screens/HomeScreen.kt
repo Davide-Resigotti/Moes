@@ -209,12 +209,13 @@ fun HomeScreen(
         }
     }
 
-    val locationObserver = remember(trainingState) {
+    val locationObserver = remember(trainingState, navigationRoutes) {
         object : LocationObserver {
             var firstLocationReceivedInternal = false
 
             override fun onNewRawLocation(rawLocation: Location) {
-                if (trainingState == TrainingState.IDLE) {
+                // Use raw location if IDLE OR (Training active but NO route set - "Free Run")
+                if (trainingState == TrainingState.IDLE || navigationRoutes.isEmpty()) {
                     lastEnhancedLocation = rawLocation
                     navigationLocationProvider.changePosition(
                         location = rawLocation, keyPoints = emptyList()
@@ -224,7 +225,8 @@ fun HomeScreen(
             }
 
             override fun onNewLocationMatcherResult(locationMatcherResult: LocationMatcherResult) {
-                if (trainingState != TrainingState.IDLE) {
+                // Use enhanced/snapped location ONLY if Training active AND route IS set
+                if (trainingState != TrainingState.IDLE && navigationRoutes.isNotEmpty()) {
                     val enhanced = locationMatcherResult.enhancedLocation
                     lastEnhancedLocation = enhanced
                     navigationLocationProvider.changePosition(

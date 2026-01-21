@@ -12,6 +12,9 @@ interface TrainingDao {
     @Query("SELECT * FROM training_sessions WHERE id = :id")
     suspend fun getSessionById(id: String): TrainingSession?
 
+    @Query("SELECT * FROM training_sessions WHERE userId = :userId AND isDeleted = 0 ORDER BY startTime ASC")
+    suspend fun getAllSessionsForUserSync(userId: String): List<TrainingSession>
+
     @Query("SELECT * FROM training_sessions WHERE userId = :userId AND isDeleted = 0 ORDER BY startTime DESC")
     fun getSessionsForUser(userId: String): Flow<List<TrainingSession>>
 
