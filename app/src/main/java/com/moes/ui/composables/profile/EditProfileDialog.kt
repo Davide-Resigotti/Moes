@@ -1,5 +1,6 @@
 package com.moes.ui.composables.profile
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,6 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,7 +25,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,6 +59,7 @@ import com.moes.utils.FormatUtils
 import java.util.Calendar
 import java.util.Locale
 
+@SuppressLint("LocalContextConfigurationRead")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileDialog(
@@ -95,36 +100,105 @@ fun EditProfileDialog(
             }
         )
 
+        // Force Italian locale for DatePicker
         val baseContext = LocalContext.current
         val italianLocale = Locale.ITALIAN
         val localizedContext = remember(baseContext) {
-            val config = android.content.res.Configuration(baseContext.resources.configuration)
-            config.setLocale(italianLocale)
+            val config = baseContext.resources.configuration.apply {
+                setLocale(italianLocale)
+            }
             baseContext.createConfigurationContext(config)
         }
 
         CompositionLocalProvider(LocalContext provides localizedContext) {
-            DatePickerDialog(
-                onDismissRequest = { showDatePicker = false },
-                confirmButton = {
-                    TextButton(onClick = {
-                        datePickerState.selectedDateMillis?.let { birthDate = it }
-                        showDatePicker = false
-                    }) { Text("OK") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDatePicker = false }) { Text("Annulla") }
-                }
+            androidx.compose.ui.window.Dialog(
+                onDismissRequest = { showDatePicker = false }
             ) {
-                DatePicker(
-                    state = datePickerState,
-                    title = {
-                        Text(
-                            text = "Seleziona data",
-                            modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 16.dp)
+                Surface(
+                    modifier = Modifier
+                        .widthIn(max = 360.dp)
+                        .wrapContentHeight(),
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 6.dp
+                ) {
+                    Column {
+                        DatePicker(
+                            state = datePickerState,
+                            showModeToggle = true,
+                            title = {
+                                Text(
+                                    text = "Data di Nascita",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 16.dp)
+                                )
+                            },
+                            headline = {
+                                Text(
+                                    text = if (datePickerState.selectedDateMillis != null) {
+                                        FormatUtils.formatBirthDate(datePickerState.selectedDateMillis!!)
+                                    } else {
+                                        "Seleziona una data"
+                                    },
+                                    style = MaterialTheme.typography.headlineMedium.copy(
+                                        fontWeight = FontWeight.Medium
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.padding(start = 24.dp, end = 12.dp, bottom = 12.dp)
+                                )
+                            },
+                            colors = DatePickerDefaults.colors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                headlineContentColor = MaterialTheme.colorScheme.onSurface,
+                                weekdayContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                subheadContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                navigationContentColor = MaterialTheme.colorScheme.onSurface,
+                                yearContentColor = MaterialTheme.colorScheme.onSurface,
+                                currentYearContentColor = MaterialTheme.colorScheme.primary,
+                                selectedYearContentColor = MaterialTheme.colorScheme.onPrimary,
+                                selectedYearContainerColor = MaterialTheme.colorScheme.primary,
+                                dayContentColor = MaterialTheme.colorScheme.onSurface,
+                                selectedDayContentColor = MaterialTheme.colorScheme.onPrimary,
+                                selectedDayContainerColor = MaterialTheme.colorScheme.primary,
+                                todayContentColor = MaterialTheme.colorScheme.primary,
+                                todayDateBorderColor = MaterialTheme.colorScheme.primary
+                            )
                         )
+                        
+                        // Action buttons
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(
+                                onClick = { showDatePicker = false },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            ) {
+                                Text("Annulla")
+                            }
+                            Button(
+                                onClick = {
+                                    datePickerState.selectedDateMillis?.let { birthDate = it }
+                                    showDatePicker = false
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                ),
+                                shape = CircleShape,
+                                modifier = Modifier.padding(start = 8.dp)
+                            ) {
+                                Text("Conferma", fontWeight = FontWeight.SemiBold)
+                            }
+                        }
                     }
-                )
+                }
             }
         }
     }
