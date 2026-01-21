@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map // Assicurati di aggiungere questo import
 
 class SocialRepository(
     private val firestoreDataSource: FirestoreDataSource,
@@ -17,7 +18,16 @@ class SocialRepository(
 
     fun getMyFriends(userId: String): Flow<List<Friend>> {
         return if (userId != AuthRepository.GUEST_ID) {
-            firestoreDataSource.getFriendsFlow(userId)
+            firestoreDataSource.getFriendsFlow(userId).map { friendsList ->
+                friendsList.map { friend ->
+                    val freshProfile = firestoreDataSource.getUserProfile(friend.userId)
+                    if (freshProfile != null) {
+                        friend.copy(displayName = "${freshProfile.firstName} ${freshProfile.lastName}".trim())
+                    } else {
+                        friend
+                    }
+                }
+            }
         } else {
             emptyFlow()
         }
@@ -25,7 +35,16 @@ class SocialRepository(
 
     fun getIncomingRequests(userId: String): Flow<List<FriendRequest>> {
         return if (userId != AuthRepository.GUEST_ID) {
-            firestoreDataSource.getIncomingRequestsFlow(userId)
+            firestoreDataSource.getIncomingRequestsFlow(userId).map { requestsList ->
+                requestsList.map { request ->
+                    val freshProfile = firestoreDataSource.getUserProfile(request.fromUserId)
+                    if (freshProfile != null) {
+                        request.copy(fromUserName = "${freshProfile.firstName} ${freshProfile.lastName}".trim())
+                    } else {
+                        request
+                    }
+                }
+            }
         } else {
             emptyFlow()
         }
@@ -63,7 +82,8 @@ class SocialRepository(
                 return Result.failure(Exception("Questo utente ti ha già inviato una richiesta. Controlla le richieste ricevute."))
             }
 
-            val myProfile = databaseRepository.getUserProfile(userId).firstOrNull()
+            val myProfile = databaseRepository.getUserProfile(userId)
+                .firstOrNull()
                 ?: return Result.failure(Exception("Impossibile recuperare il tuo profilo."))
 
             firestoreDataSource.sendFriendRequest(myProfile, targetUser.userId)
@@ -79,7 +99,8 @@ class SocialRepository(
         if (userId == AuthRepository.GUEST_ID) return Result.failure(Exception("Non sei loggato"))
 
         return try {
-            val myProfile = databaseRepository.getUserProfile(userId).firstOrNull()
+            val myProfile = databaseRepository.getUserProfile(userId)
+                .firstOrNull()
                 ?: return Result.failure(Exception("Errore profilo locale"))
 
             val myName = "${myProfile.firstName} ${myProfile.lastName}".trim()
@@ -119,12 +140,14 @@ class SocialRepository(
         }
     }
 
-    fun getFriendStatistics(friendId: String): Flow<UserStatistics?> = flow {
-        try {
-            val stats = firestoreDataSource.getUserStatistics(friendId)
-            emit(stats)
-        } catch (e: Exception) {
-            emit(null)
+    fun getFriendStatistics(friendId: String): Flow<UserStatistics?> {
+        return flow {
+            try {
+                val stats = firestoreDataSource.getUserStatistics(friendId)
+                emit(stats)
+            } catch (e: Exception) {
+                emit(null)
+            }
         }
     }
 }
