@@ -128,6 +128,32 @@ class SocialRepository(
         }
     }
 
+    fun getSentRequests(userId: String): Flow<List<FriendRequest>> {
+        return if (userId != AuthRepository.GUEST_ID) {
+            firestoreDataSource.getSentRequestsFlow(userId).map { requestsList ->
+                requestsList.map { request ->
+                    val targetProfile = firestoreDataSource.getUserProfile(request.toUserId)
+                    if (targetProfile != null) {
+                        request.copy(fromUserName = "${targetProfile.firstName} ${targetProfile.lastName}".trim())
+                    } else {
+                        request.copy(fromUserName = "Utente sconosciuto")
+                    }
+                }
+            }
+        } else {
+            emptyFlow()
+        }
+    }
+
+    suspend fun cancelSentRequest(requestId: String): Result<Unit> {
+        return try {
+            firestoreDataSource.cancelSentRequest(requestId)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun removeFriend(friendId: String): Result<Unit> {
         val userId = authRepository.currentUserIdSafe
         if (userId == AuthRepository.GUEST_ID) return Result.failure(Exception("Non sei loggato"))
