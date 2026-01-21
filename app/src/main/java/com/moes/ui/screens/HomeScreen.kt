@@ -337,7 +337,7 @@ fun HomeScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     val navBarHeight = 64.dp
-    val navBarBottomMargin = 24.dp
+    val navBarBottomMargin = 16.dp
     val navBarHorizontalMargin = 24.dp
     val bottomObstructionHeight = navBarHeight + navBarBottomMargin
 

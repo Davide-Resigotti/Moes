@@ -5,8 +5,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,6 +35,9 @@ fun SessionsScreen(
 ) {
     val sessions by viewModel.sessions.collectAsState()
 
+    val systemBottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val listBottomPadding = 100.dp + systemBottomPadding
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -51,7 +57,7 @@ fun SessionsScreen(
                     top = 16.dp,
                     start = 20.dp,
                     end = 20.dp,
-                    bottom = 130.dp
+                    bottom = listBottomPadding
                 ),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxSize()
