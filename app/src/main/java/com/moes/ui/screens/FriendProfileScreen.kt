@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.moes.repositories.GamificationRepository
+import com.moes.ui.LocalNetworkStatus
 import com.moes.ui.composables.profile.MissionCard
 import com.moes.ui.theme.LogoGradientEnd
 import com.moes.ui.theme.LogoGradientStart
@@ -83,6 +84,8 @@ fun FriendProfileScreen(
     val (showStreak, streakEmoji) = remember(currentStreak, lastTrainingDate) {
         StatisticsUtils.getStreakStatus(currentStreak, lastTrainingDate)
     }
+
+    val isOnline = LocalNetworkStatus.current
 
     val displayName = friendInfo?.displayName ?: "Utente"
     val initials = if (displayName.isNotEmpty()) displayName.take(1).uppercase() else "?"
@@ -230,10 +233,18 @@ fun FriendProfileScreen(
                                     .height(100.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(32.dp),
-                                    strokeWidth = 3.dp
-                                )
+                                if (isOnline) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(32.dp),
+                                        strokeWidth = 3.dp
+                                    )
+                                } else {
+                                    Text(
+                                        "Statistiche non disponibili offline.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     } else if (friendMissions.isEmpty()) {

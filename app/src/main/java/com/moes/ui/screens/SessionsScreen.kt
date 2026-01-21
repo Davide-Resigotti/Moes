@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -24,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.moes.ui.LocalNetworkStatus
 import com.moes.ui.composables.sessions.SessionPillCard
 import com.moes.ui.viewmodels.SessionsViewModel
 import com.moes.ui.viewmodels.ViewModelFactory
@@ -37,6 +39,14 @@ fun SessionsScreen(
 
     val systemBottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listBottomPadding = 100.dp + systemBottomPadding
+
+    val isOnline = LocalNetworkStatus.current
+
+    LaunchedEffect(isOnline) {
+        if (isOnline) {
+            viewModel.refreshData()
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -54,7 +64,7 @@ fun SessionsScreen(
         } else {
             LazyColumn(
                 contentPadding = PaddingValues(
-                    top = 16.dp,
+                    top = if (isOnline) 16.dp else 8.dp,
                     start = 20.dp,
                     end = 20.dp,
                     bottom = listBottomPadding

@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -97,6 +96,7 @@ import com.mapbox.navigation.ui.maps.route.line.api.MapboxRouteLineView
 import com.mapbox.navigation.ui.maps.route.line.model.MapboxRouteLineApiOptions
 import com.mapbox.navigation.ui.maps.route.line.model.MapboxRouteLineViewOptions
 import com.moes.data.TrainingState
+import com.moes.ui.LocalNetworkStatus
 import com.moes.ui.composables.utils.InstructionBanner
 import com.moes.ui.composables.utils.SearchBar
 import com.moes.ui.composables.utils.TrainingOverlay
@@ -104,6 +104,7 @@ import com.moes.ui.viewmodels.HomeViewModel
 import com.moes.ui.viewmodels.ProfileViewModel
 import com.moes.ui.viewmodels.SocialViewModel
 import com.moes.ui.viewmodels.ViewModelFactory
+import com.moes.utils.statusBarsPaddingIfOnline
 import kotlinx.coroutines.delay
 
 @SuppressLint("MissingPermission", "RestrictedApi")
@@ -336,6 +337,7 @@ fun HomeScreen(
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
+    val isOnline = LocalNetworkStatus.current
     val navBarHeight = 64.dp
     val navBarBottomMargin = 16.dp
     val navBarHorizontalMargin = 24.dp
@@ -448,8 +450,12 @@ fun HomeScreen(
         Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .statusBarsPadding()
-                .padding(top = 16.dp, start = navBarHorizontalMargin, end = navBarHorizontalMargin)
+                .statusBarsPaddingIfOnline(isOnline)
+                .padding(
+                    top = if (isOnline) 16.dp else 8.dp,
+                    start = navBarHorizontalMargin,
+                    end = navBarHorizontalMargin
+                )
         ) {
             if (trainingState == TrainingState.IDLE) {
                 Row(

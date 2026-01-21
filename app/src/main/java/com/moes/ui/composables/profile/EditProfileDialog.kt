@@ -51,6 +51,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalContext
 import android.view.ContextThemeWrapper
 import com.moes.data.UserProfile
+import com.moes.ui.LocalNetworkStatus
 import com.moes.utils.FormatUtils
 import java.util.Calendar
 import java.util.Locale
@@ -77,6 +78,8 @@ fun EditProfileDialog(
     val isNameValid by remember(firstName) {
         derivedStateOf { firstName.trim().isNotEmpty() }
     }
+
+    val isOnline = LocalNetworkStatus.current
 
     // DATE PICKER
     if (showDatePicker) {
@@ -245,7 +248,7 @@ fun EditProfileDialog(
         confirmButton = {
             Button(
                 onClick = { onSave(firstName, lastName, weight, height, gender, birthDate) },
-                enabled = isNameValid,
+                enabled = isNameValid && isOnline,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -275,7 +278,7 @@ private fun MoesDialogTextField(
     supportingText: String? = null
 ) {
     val focusManager = LocalFocusManager.current
-    
+
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,

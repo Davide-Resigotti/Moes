@@ -34,7 +34,12 @@ import com.moes.ui.theme.LogoGradientStart
 import com.moes.utils.FormatUtils
 
 @Composable
-fun FriendCard(friend: Friend, onClick: () -> Unit, onRemove: () -> Unit) {
+fun FriendCard(
+    friend: Friend,
+    onClick: () -> Unit,
+    onRemove: () -> Unit,
+    enabled: Boolean = true
+) {
     val initials = friend.displayName.take(1).uppercase()
 
     Surface(
@@ -43,11 +48,9 @@ fun FriendCard(friend: Friend, onClick: () -> Unit, onRemove: () -> Unit) {
         shadowElevation = 2.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
-    ) {
+            .clickable { onClick() }) {
         Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically
         ) {
             // Avatar
             Box(
@@ -58,14 +61,11 @@ fun FriendCard(friend: Friend, onClick: () -> Unit, onRemove: () -> Unit) {
                         brush = Brush.linearGradient(
                             colors = listOf(LogoGradientStart, LogoGradientEnd)
                         )
-                    ),
-                contentAlignment = Alignment.Center
+                    ), contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = initials,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                    text = initials, style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold, color = Color.White
                     )
                 )
             }
@@ -90,7 +90,10 @@ fun FriendCard(friend: Friend, onClick: () -> Unit, onRemove: () -> Unit) {
             }
 
             // RIMUOVI
-            IconButton(onClick = onRemove) {
+            IconButton(
+                onClick = onRemove,
+                enabled = enabled
+            ) {
                 Icon(
                     imageVector = Icons.Default.PersonRemove,
                     contentDescription = "Rimuovi amico",

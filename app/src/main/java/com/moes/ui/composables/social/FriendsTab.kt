@@ -16,7 +16,8 @@ import com.moes.data.social.Friend
 fun FriendsTab(
     friends: List<Friend>,
     onFriendClick: (String) -> Unit,
-    onRemoveFriend: (String) -> Unit
+    onRemoveFriend: (String) -> Unit,
+    isOnline: Boolean
 ) {
     if (friends.isEmpty()) {
         FriendEmptyState(
@@ -33,7 +34,8 @@ fun FriendsTab(
                 FriendCard(
                     friend = friend,
                     onClick = { onFriendClick(friend.userId) },
-                    onRemove = { onRemoveFriend(friend.userId) }
+                    onRemove = { onRemoveFriend(friend.userId) },
+                    enabled = isOnline
                 )
             }
         }

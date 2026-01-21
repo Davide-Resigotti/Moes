@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.moes.ui.LocalNetworkStatus
 import com.moes.ui.composables.profile.AccountHeader
 import com.moes.ui.composables.profile.EditProfileDialog
 import com.moes.ui.composables.profile.MissionCard
@@ -52,6 +53,8 @@ fun AccountScreen(
 
     var showEditDialog by remember { mutableStateOf(false) }
 
+    val isOnline = LocalNetworkStatus.current
+
     val systemBottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listBottomPadding = 100.dp + systemBottomPadding
 
@@ -73,7 +76,7 @@ fun AccountScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                top = 16.dp,
+                top = if (isOnline) 16.dp else 8.dp,
                 start = 20.dp,
                 end = 20.dp,
                 bottom = listBottomPadding

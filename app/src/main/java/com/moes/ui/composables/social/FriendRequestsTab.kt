@@ -35,7 +35,8 @@ fun FriendRequestsTab(
     sentRequests: List<FriendRequest>,
     onAccept: (FriendRequest) -> Unit,
     onReject: (FriendRequest) -> Unit,
-    onCancelSent: (String) -> Unit
+    onCancelSent: (String) -> Unit,
+    isOnline: Boolean
 ) {
     // 0 = Ricevute, 1 = Inviate
     var selectedSubTab by remember { mutableIntStateOf(0) }
@@ -127,7 +128,8 @@ fun FriendRequestsTab(
                         FriendRequestCard(
                             request = request,
                             onAccept = onAccept,
-                            onReject = onReject
+                            onReject = onReject,
+                            enabled = isOnline
                         )
                     }
                 }
@@ -148,7 +150,8 @@ fun FriendRequestsTab(
                     items(sentRequests) { request ->
                         SentRequestCard(
                             request = request,
-                            onCancel = onCancelSent
+                            onCancel = onCancelSent,
+                            enabled = isOnline
                         )
                     }
                 }
