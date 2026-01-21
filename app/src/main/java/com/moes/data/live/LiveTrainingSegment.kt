@@ -22,9 +22,8 @@ data class LiveTrainingSegment(
         }.sum()
     }
 
-    // Formula dell'Haversine per la distanza
     private fun calculateDistance(c1: Coordinate, c2: Coordinate): Double {
-        val R = 6371000 // Raggio terra in metri
+        val R = 6371000
         val dLat = Math.toRadians(c2.latitude - c1.latitude)
         val dLon = Math.toRadians(c2.longitude - c1.longitude)
         val a = sin(dLat / 2) * sin(dLat / 2) +
@@ -48,7 +47,8 @@ data class LiveTrainingSegment(
             calculateDistance(c1, c2)
         }.sum()
 
-        val durationSeconds = (recentCoords.last().timestamp - recentCoords.first().timestamp) / 1000.0
+        val durationSeconds =
+            (recentCoords.last().timestamp - recentCoords.first().timestamp) / 1000.0
         if (durationSeconds <= 0.1) return "--:--"
 
         val paceMinPerKm = (durationSeconds / 60.0) / (recentDistance / 1000.0)
@@ -58,7 +58,6 @@ data class LiveTrainingSegment(
         return String.format("%02d:%02d", minutes, seconds)
     }
 
-    // Pace medio totale segmento
     fun averagePace(): String {
         val totalDuration = duration() / 1000.0
         if (totalDuration <= 0.1) return "--:--"

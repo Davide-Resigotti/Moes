@@ -48,7 +48,7 @@ fun FriendRequestCard(
             modifier = Modifier.Companion.padding(16.dp),
             verticalAlignment = Alignment.Companion.CenterVertically
         ) {
-            // Avatar piccolo
+            // AVATAR
             Box(
                 modifier = Modifier.Companion
                     .size(40.dp)
@@ -81,7 +81,7 @@ fun FriendRequestCard(
                 )
             }
 
-            // Azioni
+            // AZIONI
             Row {
                 IconButton(
                     onClick = { onReject(request) },

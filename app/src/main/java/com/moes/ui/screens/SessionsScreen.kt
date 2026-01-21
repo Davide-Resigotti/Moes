@@ -84,6 +84,7 @@ fun SessionsScreen(
                     )
                 }
 
+                // LISTA ALLENAMENTI
                 items(sessions) { session ->
                     SessionPillCard(
                         session = session,

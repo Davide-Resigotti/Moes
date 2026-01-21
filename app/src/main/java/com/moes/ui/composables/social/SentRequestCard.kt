@@ -46,7 +46,7 @@ fun SentRequestCard(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar
+            // AVATAR
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -79,7 +79,7 @@ fun SentRequestCard(
                 )
             }
 
-            // Azione Annulla
+            // ANNULLA
             IconButton(
                 onClick = { onCancel(request.id) },
                 enabled = enabled,

@@ -33,13 +33,10 @@ data class LiveTrainingSession(
 }
 
 fun LiveTrainingSession.toTrainingSession(userId: String): TrainingSession {
-    // 1. Appiattisci le coordinate ignorando le pause
     val allCoordinates = this.segments.flatMap { it.coordinates }
 
-    // 2. Comprimi la rotta
     val encodedGeometry = PolylineUtils.encode(allCoordinates)
 
-    // 3. Ritorna l'oggetto pronto per il salvataggio
     return TrainingSession(
         id = this.id,
         userId = userId,

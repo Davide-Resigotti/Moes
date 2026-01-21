@@ -195,7 +195,7 @@ private fun MoesAuthTextField(
                 keyboardOptions = keyboardOptions,
                 keyboardActions = KeyboardActions(
                     onDone = { focusManager.clearFocus() },
-                    onNext = { /* let default behavior handle focus */ }
+                    onNext = { }
                 ),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,

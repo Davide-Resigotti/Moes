@@ -12,10 +12,6 @@ import com.mapbox.navigation.core.MapboxNavigationProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-/**
- * A repository dedicated to fetching route information from the Mapbox Navigation SDK.
- * It has no knowledge of the UI.
- */
 class MapboxNavigationRepository {
     private val mapboxNavigation: MapboxNavigation = MapboxNavigationProvider.retrieve()
 

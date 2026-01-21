@@ -43,7 +43,6 @@ fun LoginScreen(viewModel: AuthViewModel, onGoToRegister: () -> Unit) {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Divider "oppure"
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()
@@ -70,7 +69,7 @@ fun LoginScreen(viewModel: AuthViewModel, onGoToRegister: () -> Unit) {
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Link Registrazione
+                        // LINK REGISTRAZIONE
                         TextButton(onClick = onGoToRegister) {
                             Text(
                                 "Non hai un account? ",
@@ -83,7 +82,8 @@ fun LoginScreen(viewModel: AuthViewModel, onGoToRegister: () -> Unit) {
                             )
                         }
                     }
-                })
+                }
+            )
         }
     }
 }

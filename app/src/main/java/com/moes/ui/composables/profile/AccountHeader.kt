@@ -72,7 +72,6 @@ fun AccountHeader(
         ) {
             // AVATAR
             Box(contentAlignment = Alignment.BottomCenter) {
-                // Avatar Circle
                 Box(
                     modifier = Modifier
                         .size(60.dp)

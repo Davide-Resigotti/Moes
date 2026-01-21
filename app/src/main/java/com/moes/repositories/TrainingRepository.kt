@@ -15,10 +15,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/**
- * Repository that manages the lifecycle of a training session.
- * It is the single source of truth for the training state and data.
- */
 class TrainingRepository(
     context: Context,
     private val databaseRepository: DatabaseRepository,
@@ -28,7 +24,6 @@ class TrainingRepository(
 
     private val appContext = context.applicationContext
 
-    // Expose the training state directly from the service.
     val trainingState: StateFlow<TrainingState> = LiveTrainingService.trainingState
         .stateIn(externalScope, SharingStarted.WhileSubscribed(5000), TrainingState.IDLE)
 

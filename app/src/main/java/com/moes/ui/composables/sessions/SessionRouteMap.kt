@@ -121,7 +121,6 @@ private fun ExpandButton(
 ) {
     SmallFloatingActionButton(
         onClick = {
-            // Fix tap: forza dismiss dialog prima del cambio stato
             if (isFullscreen) {
                 onClick()
             } else {
