@@ -87,22 +87,20 @@ class TrainingRepository(
     private suspend fun saveFinishedSession(liveSession: LiveTrainingSession) {
         val userId = authRepository.currentUserIdSafe
 
-        // Assegniamo un nome di default basato sull'ora (o generico)
         val defaultTitle = "Corsa ${
-            java.text.SimpleDateFormat("dd/MM HH:mm").format(java.util.Date(liveSession.startTime))
+            java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.getDefault())
+                .format(java.util.Date(liveSession.startTime))
         }"
 
-        // Mapperemo includendo il titolo (devi aggiornare il mapper in LiveTrainingSession.kt o passare il titolo qui)
-        // Per semplicità, assumiamo che il mapper ora accetti il titolo o lo mettiamo di default nel costruttore Entity
         val session = liveSession.toTrainingSession(userId).copy(title = defaultTitle)
 
         databaseRepository.saveTrainingSession(session)
 
-        // Notifichiamo la UI che abbiamo salvato questo ID
         _finishedSessionId.value = session.id
+
+        databaseRepository.uploadSessionToCloud(session)
     }
 
-    // Metodo per resettare l'evento di navigazione
     fun clearFinishedSessionEvent() {
         _finishedSessionId.value = null
     }

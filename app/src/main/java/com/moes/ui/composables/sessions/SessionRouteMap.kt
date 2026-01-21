@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +39,8 @@ import com.mapbox.maps.plugin.compass.compass
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.scalebar.scalebar
 import com.moes.utils.PolylineUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun SessionRouteMap(
@@ -46,14 +49,22 @@ fun SessionRouteMap(
 ) {
     var isFullscreen by remember { mutableStateOf(false) }
 
-    val coordinates = remember(encodedGeometry) {
-        PolylineUtils.decode(encodedGeometry).map { Point.fromLngLat(it.longitude, it.latitude) }
+    val coordinates = remember(encodedGeometry) { mutableStateOf<List<Point>>(emptyList()) }
+
+    LaunchedEffect(encodedGeometry) {
+        if (encodedGeometry.isNotEmpty()) {
+            val decoded = withContext(Dispatchers.Default) {
+                PolylineUtils.decode(encodedGeometry)
+                    .map { Point.fromLngLat(it.longitude, it.latitude) }
+            }
+            coordinates.value = decoded
+        }
     }
 
     // VERSIONE EMBEDDED
     Box(modifier = modifier.clip(RoundedCornerShape(16.dp))) {
         InternalMap(
-            coordinates = coordinates,
+            coordinates = coordinates.value,
             isInteractive = false,
             modifier = Modifier.fillMaxSize()
         )
@@ -83,7 +94,7 @@ fun SessionRouteMap(
             ) {
                 Box(Modifier.fillMaxSize()) {
                     InternalMap(
-                        coordinates = coordinates,
+                        coordinates = coordinates.value,
                         isInteractive = true,
                         modifier = Modifier.fillMaxSize()
                     )

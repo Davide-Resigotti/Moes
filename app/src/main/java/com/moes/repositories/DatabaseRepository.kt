@@ -28,17 +28,18 @@ class DatabaseRepository(
 
     suspend fun getSessionById(id: String): TrainingSession? = trainingDao.getSessionById(id)
 
+    fun getSessionByIdFlow(id: String): Flow<TrainingSession?> = trainingDao.getSessionByIdFlow(id)
+
     suspend fun saveTrainingSession(session: TrainingSession) {
         trainingDao.insertSession(session)
-
         updateLocalStatistics(session)
+    }
 
-        // 3. Sync Cloud
+    suspend fun uploadSessionToCloud(session: TrainingSession) {
         if (session.userId != AuthRepository.GUEST_ID) {
             try {
                 firestoreDataSource.saveSession(session)
                 trainingDao.markAsSynced(session.id)
-
                 syncUserStats(session.userId)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -71,7 +72,7 @@ class DatabaseRepository(
             try {
                 firestoreDataSource.softDeleteSession(session.userId, id)
                 trainingDao.markAsSynced(id)
-                
+
                 // Sync the updated stats to cloud
                 syncUserStats(session.userId)
             } catch (e: Exception) {
