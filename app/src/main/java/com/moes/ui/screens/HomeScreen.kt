@@ -209,13 +209,13 @@ fun HomeScreen(
         }
     }
 
-    val locationObserver = remember(trainingState, navigationRoutes) {
+    val locationObserver = remember(trainingState) {
         object : LocationObserver {
             var firstLocationReceivedInternal = false
 
             override fun onNewRawLocation(rawLocation: Location) {
-                // Use raw location if IDLE OR (Training active but NO route set - "Free Run")
-                if (trainingState == TrainingState.IDLE || navigationRoutes.isEmpty()) {
+                if (trainingState == TrainingState.IDLE) {
+
                     lastEnhancedLocation = rawLocation
                     navigationLocationProvider.changePosition(
                         location = rawLocation, keyPoints = emptyList()
@@ -225,8 +225,8 @@ fun HomeScreen(
             }
 
             override fun onNewLocationMatcherResult(locationMatcherResult: LocationMatcherResult) {
-                // Use enhanced/snapped location ONLY if Training active AND route IS set
-                if (trainingState != TrainingState.IDLE && navigationRoutes.isNotEmpty()) {
+                if (trainingState != TrainingState.IDLE) {
+
                     val enhanced = locationMatcherResult.enhancedLocation
                     lastEnhancedLocation = enhanced
                     navigationLocationProvider.changePosition(
@@ -290,20 +290,16 @@ fun HomeScreen(
 
         map.location.apply {
             enabled = true
+            puckBearingEnabled = trainingState != TrainingState.RUNNING
 
-            puckBearingEnabled = true
-
-            puckBearing = if (trainingState == TrainingState.IDLE) {
-                PuckBearing.HEADING
-            } else {
-                PuckBearing.COURSE
+            puckBearing = when {
+                trainingState == TrainingState.IDLE -> PuckBearing.HEADING
+                else -> PuckBearing.COURSE
             }
         }
 
         if (trainingState == TrainingState.RUNNING) {
             navigationCamera?.requestNavigationCameraToFollowing()
-        } else if (trainingState == TrainingState.IDLE) {
-            navigationCamera?.requestNavigationCameraToOverview()
         }
     }
 
