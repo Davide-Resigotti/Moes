@@ -165,7 +165,6 @@ fun HomeScreen(
     var viewportDataSource by remember { mutableStateOf<MapboxNavigationViewportDataSource?>(null) }
     var navigationCamera by remember { mutableStateOf<NavigationCamera?>(null) }
 
-    // Loading state - map is ready when both style is loaded AND we have a valid location
     var isMapStyleLoaded by remember { mutableStateOf(false) }
     var isFirstLocationReceived by remember { mutableStateOf(false) }
     val isMapReady = isMapStyleLoaded && isFirstLocationReceived
@@ -244,7 +243,7 @@ fun HomeScreen(
             private fun updateCameraIfNeeded(location: Location) {
                 if (!firstLocationReceivedInternal) {
                     firstLocationReceivedInternal = true
-                    isFirstLocationReceived = true  // Update Compose state for loading overlay
+                    isFirstLocationReceived = true
                     mapViewState.value?.camera?.easeTo(
                         CameraOptions.Builder()
                             .center(Point.fromLngLat(location.longitude, location.latitude))
@@ -413,14 +412,13 @@ fun HomeScreen(
                 mapboxMap.addOnMoveListener(object : OnMoveListener {
                     override fun onMoveBegin(detector: MoveGestureDetector) {
                         navigationCamera?.requestNavigationCameraToIdle()
-                        focusManager.clearFocus()  // Clear focus when dragging the map
+                        focusManager.clearFocus()
                     }
 
                     override fun onMove(detector: MoveGestureDetector): Boolean = false
                     override fun onMoveEnd(detector: MoveGestureDetector) {}
                 })
 
-                // Clear focus when tapping on the map
                 mapboxMap.addOnMapClickListener {
                     focusManager.clearFocus()
                     true
@@ -428,7 +426,7 @@ fun HomeScreen(
             }
         }, update = {})
 
-        // LOADING OVERLAY - shows until map style is loaded AND we have a valid location
+        // LOADING OVERLAY
         AnimatedVisibility(
             visible = !isMapReady,
             enter = fadeIn(),
@@ -579,7 +577,6 @@ fun HomeScreen(
                 // MY LOCATION BUTTON
                 FloatingActionButton(
                     onClick = {
-                        // Use lastEnhancedLocation which is consistently updated in both IDLE and training states
                         val currentLoc = lastEnhancedLocation
                         if (currentLoc == null) {
                             Log.d("HomeScreen", "No valid location yet")
@@ -601,9 +598,6 @@ fun HomeScreen(
                         if (trainingState == TrainingState.RUNNING || trainingState == TrainingState.PAUSED) {
                             navigationCamera?.requestNavigationCameraToFollowing()
                         } else {
-                            // Use requestNavigationCameraToIdle() in IDLE state to prevent the navigation camera
-                            // from overriding our manual camera animation (overview mode without a route
-                            // would animate to an empty/default bounding box at 0,0)
                             navigationCamera?.requestNavigationCameraToIdle()
                         }
                     },
@@ -654,7 +648,8 @@ fun HomeScreen(
                     onStopClick = {
                         homeViewModel.onStopTraining()
                         navigationCamera?.requestNavigationCameraToOverview()
-                    })
+                    }
+                )
             }
         }
     }

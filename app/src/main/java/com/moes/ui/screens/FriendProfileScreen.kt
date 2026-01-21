@@ -138,7 +138,7 @@ fun FriendProfileScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Box(contentAlignment = Alignment.BottomCenter) {
-                                // Avatar Originale
+                                // AVATAR
                                 Box(
                                     modifier = Modifier
                                         .size(100.dp)
@@ -158,7 +158,7 @@ fun FriendProfileScreen(
                                     )
                                 }
 
-                                // Badge Streak
+                                // BADGE STREAK
                                 if (showStreak) {
                                     Box(
                                         modifier = Modifier

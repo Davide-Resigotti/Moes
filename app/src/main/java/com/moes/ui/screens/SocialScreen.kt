@@ -79,6 +79,7 @@ fun SocialScreen(
 
     Scaffold(
         floatingActionButton = {
+            // AGGIUNGI AMICO
             if (selectedTab == 0 && isOnline) {
                 FloatingActionButton(
                     onClick = { showAddFriendDialog = true },
@@ -117,6 +118,7 @@ fun SocialScreen(
                 )
             }
 
+            // SOCIAL TAB BAR
             SocialTabBar(
                 selectedTab = selectedTab,
                 onTabSelected = { selectedTab = it },
@@ -125,7 +127,6 @@ fun SocialScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Content
             Box(modifier = Modifier.fillMaxSize()) {
                 if (uiState.isLoading && uiState.friends.isEmpty() && uiState.pendingRequests.isEmpty() && !showAddFriendDialog) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))

@@ -4,9 +4,6 @@ import com.moes.data.Coordinate
 import kotlin.math.roundToInt
 
 object PolylineUtils {
-    /**
-     * Algoritmo standard (Google/Mapbox) per codificare una lista di coordinate in una stringa compressa.
-     */
     fun encode(coords: List<Coordinate>): String {
         val result = StringBuffer()
         var lastLat = 0
@@ -28,9 +25,6 @@ object PolylineUtils {
         return result.toString()
     }
 
-    /**
-     * Decodifica una stringa Polyline in una lista di coordinate (utile se devi mostrare la linea sulla mappa).
-     */
     fun decode(encoded: String): List<Coordinate> {
         val poly = ArrayList<Coordinate>()
         var index = 0

@@ -67,7 +67,7 @@ fun SocialTabBar(
                     .fillMaxHeight()
                     .padding(4.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)) // Colore chiaro primario
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
             )
 
             Row(modifier = Modifier.fillMaxSize()) {
@@ -85,7 +85,7 @@ fun SocialTabBar(
                             .fillMaxHeight()
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = null // Rimuove il ripple standard per pulizia visiva
+                                indication = null
                             ) { onTabSelected(index) }, contentAlignment = Alignment.Center
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {

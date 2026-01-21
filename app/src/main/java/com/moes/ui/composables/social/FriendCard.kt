@@ -52,7 +52,7 @@ fun FriendCard(
         Row(
             modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar
+            // AVATAR
             Box(
                 modifier = Modifier
                     .size(50.dp)

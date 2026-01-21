@@ -46,7 +46,7 @@ fun LocationPermissionScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // ICONA CON GRADIENTE
+            // AVATAR PROFILO
             Box(
                 modifier = Modifier
                     .size(120.dp)

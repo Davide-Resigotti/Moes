@@ -95,7 +95,7 @@ fun SessionDetailScreen(
         }
     }
 
-    // Dialog Informativo Calorie
+    // DIALOG CALORIE
     if (showCalorieInfoDialog) {
         AlertDialog(
             onDismissRequest = { showCalorieInfoDialog = false },
@@ -119,12 +119,14 @@ fun SessionDetailScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
+            // APP BAR
             TopAppBar(
                 title = {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // TITOLO
                         Text(
                             "Dettaglio Allenamento",
                             style = MaterialTheme.typography.titleLarge,
@@ -133,6 +135,7 @@ fun SessionDetailScreen(
                             color = MaterialTheme.colorScheme.onBackground
                         )
 
+                        // ICONA SYNC
                         if (session != null) {
                             Icon(
                                 imageVector = if (session!!.isSynced) Icons.Default.CloudDone else Icons.Default.CloudOff,
@@ -265,7 +268,6 @@ fun SessionDetailScreen(
                             cursorColor = MaterialTheme.colorScheme.primary,
                             errorBorderColor = MaterialTheme.colorScheme.error,
                             errorLabelColor = MaterialTheme.colorScheme.error,
-                            // Background trasparente per stile moderno
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
                             disabledContainerColor = Color.Transparent
