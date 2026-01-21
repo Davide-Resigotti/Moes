@@ -207,6 +207,14 @@ fun FriendProfileScreen(
                             color = MaterialTheme.colorScheme.onBackground
                         )
 
+                        if (friendInfo.email.isNotBlank()) {
+                            Text(
+                                text = friendInfo.email,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
                         if (sinceDate > 0) {
                             Text(
                                 text = "Amici dal ${FormatUtils.formatDate(sinceDate)}",

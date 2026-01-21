@@ -22,7 +22,10 @@ class SocialRepository(
                 friendsList.map { friend ->
                     val freshProfile = firestoreDataSource.getUserProfile(friend.userId)
                     if (freshProfile != null) {
-                        friend.copy(displayName = "${freshProfile.firstName} ${freshProfile.lastName}".trim())
+                        friend.copy(
+                            displayName = "${freshProfile.firstName} ${freshProfile.lastName}".trim(),
+                            email = freshProfile.email
+                        )
                     } else {
                         friend
                     }
