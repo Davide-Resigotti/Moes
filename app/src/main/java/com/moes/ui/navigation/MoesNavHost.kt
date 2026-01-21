@@ -94,6 +94,12 @@ fun MoesNavHost() {
             currentDestination?.route == Routes.ACCOUNT -> Routes.ACCOUNT
             currentDestination?.route?.startsWith("session_detail") == true -> Routes.SESSIONS
             currentDestination?.route == Routes.AUTH -> Routes.ACCOUNT
+            currentDestination?.route == Routes.SOCIAL -> {
+                val tabIndex = navBackStackEntry?.arguments?.getInt("tab") ?: 0
+                if (tabIndex == 1) Routes.HOME else Routes.ACCOUNT
+            }
+
+            currentDestination?.route == Routes.FRIEND_PROFILE -> Routes.ACCOUNT
             else -> Routes.HOME
         }
 
@@ -171,16 +177,28 @@ fun MoesNavHost() {
             composable(
                 route = Routes.AUTH,
                 enterTransition = {
-                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(250)) + fadeIn(tween(200))
+                    slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Start,
+                        tween(250)
+                    ) + fadeIn(tween(200))
                 },
                 exitTransition = {
-                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(250)) + fadeOut(tween(200))
+                    slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Start,
+                        tween(250)
+                    ) + fadeOut(tween(200))
                 },
                 popEnterTransition = {
-                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(250)) + fadeIn(tween(200))
+                    slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.End,
+                        tween(250)
+                    ) + fadeIn(tween(200))
                 },
                 popExitTransition = {
-                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(250)) + fadeOut(tween(200))
+                    slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.End,
+                        tween(250)
+                    ) + fadeOut(tween(200))
                 }
             ) {
                 AuthScreen(
@@ -194,16 +212,28 @@ fun MoesNavHost() {
                 route = Routes.SESSION_DETAIL,
                 arguments = listOf(navArgument("sessionId") { type = NavType.StringType }),
                 enterTransition = {
-                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(250)) + fadeIn(tween(200))
+                    slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Start,
+                        tween(250)
+                    ) + fadeIn(tween(200))
                 },
                 exitTransition = {
-                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(250)) + fadeOut(tween(200))
+                    slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Start,
+                        tween(250)
+                    ) + fadeOut(tween(200))
                 },
                 popEnterTransition = {
-                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(250)) + fadeIn(tween(200))
+                    slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.End,
+                        tween(250)
+                    ) + fadeIn(tween(200))
                 },
                 popExitTransition = {
-                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(250)) + fadeOut(tween(200))
+                    slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.End,
+                        tween(250)
+                    ) + fadeOut(tween(200))
                 }
             ) { backStackEntry ->
                 val sessionId =
@@ -222,16 +252,28 @@ fun MoesNavHost() {
                     defaultValue = 0
                 }),
                 enterTransition = {
-                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(250)) + fadeIn(tween(200))
+                    slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Start,
+                        tween(250)
+                    ) + fadeIn(tween(200))
                 },
                 exitTransition = {
-                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(250)) + fadeOut(tween(200))
+                    slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Start,
+                        tween(250)
+                    ) + fadeOut(tween(200))
                 },
                 popEnterTransition = {
-                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(250)) + fadeIn(tween(200))
+                    slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.End,
+                        tween(250)
+                    ) + fadeIn(tween(200))
                 },
                 popExitTransition = {
-                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(250)) + fadeOut(tween(200))
+                    slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.End,
+                        tween(250)
+                    ) + fadeOut(tween(200))
                 }
             ) { backStackEntry ->
                 val tab = backStackEntry.arguments?.getInt("tab") ?: 0
@@ -249,16 +291,28 @@ fun MoesNavHost() {
                 route = Routes.FRIEND_PROFILE,
                 arguments = listOf(navArgument("friendId") { type = NavType.StringType }),
                 enterTransition = {
-                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(250)) + fadeIn(tween(200))
+                    slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Start,
+                        tween(250)
+                    ) + fadeIn(tween(200))
                 },
                 exitTransition = {
-                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(250)) + fadeOut(tween(200))
+                    slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Start,
+                        tween(250)
+                    ) + fadeOut(tween(200))
                 },
                 popEnterTransition = {
-                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(250)) + fadeIn(tween(200))
+                    slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.End,
+                        tween(250)
+                    ) + fadeIn(tween(200))
                 },
                 popExitTransition = {
-                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(250)) + fadeOut(tween(200))
+                    slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.End,
+                        tween(250)
+                    ) + fadeOut(tween(200))
                 }
             ) { backStackEntry ->
                 val friendId = backStackEntry.arguments?.getString("friendId") ?: return@composable
