@@ -33,7 +33,8 @@ import com.moes.data.social.FriendRequest
 fun FriendRequestCard(
     request: FriendRequest,
     onAccept: (FriendRequest) -> Unit,
-    onReject: (FriendRequest) -> Unit
+    onReject: (FriendRequest) -> Unit,
+    enabled: Boolean = true
 ) {
     val initials = request.fromUserName.take(1).uppercase()
 
@@ -84,12 +85,14 @@ fun FriendRequestCard(
             Row {
                 IconButton(
                     onClick = { onReject(request) },
+                    enabled = enabled,
                     colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
                     Icon(Icons.Default.Close, contentDescription = "Rifiuta")
                 }
                 IconButton(
                     onClick = { onAccept(request) },
+                    enabled = enabled,
                     colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Icon(Icons.Default.Check, contentDescription = "Accetta")

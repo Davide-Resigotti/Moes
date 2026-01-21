@@ -41,6 +41,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.moes.ui.LocalNetworkStatus
 import com.moes.ui.viewmodels.AuthViewModel
 
 @Composable
@@ -128,7 +129,7 @@ fun AuthForm(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            enabled = !viewModel.isLoading,
+            enabled = !viewModel.isLoading && LocalNetworkStatus.current,
             shape = CircleShape,
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,

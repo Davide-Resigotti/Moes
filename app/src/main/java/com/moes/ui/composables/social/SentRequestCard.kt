@@ -31,7 +31,8 @@ import com.moes.data.social.FriendRequest
 @Composable
 fun SentRequestCard(
     request: FriendRequest,
-    onCancel: (String) -> Unit
+    onCancel: (String) -> Unit,
+    enabled: Boolean = true
 ) {
     val initials = request.fromUserName.take(1).uppercase()
 
@@ -81,6 +82,7 @@ fun SentRequestCard(
             // Azione Annulla
             IconButton(
                 onClick = { onCancel(request.id) },
+                enabled = enabled,
                 colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
             ) {
                 Icon(Icons.Default.Close, contentDescription = "Annulla richiesta")

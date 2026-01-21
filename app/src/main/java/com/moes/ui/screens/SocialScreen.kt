@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.moes.ui.LocalNetworkStatus
 import com.moes.ui.composables.social.AddFriendDialog
 import com.moes.ui.composables.social.FriendRequestsTab
 import com.moes.ui.composables.social.FriendsTab
@@ -51,6 +52,7 @@ fun SocialScreen(
     val uiState by viewModel.uiState.collectAsState()
     var selectedTab by remember { mutableIntStateOf(initialTab) }
     var showAddFriendDialog by remember { mutableStateOf(false) }
+    val isOnline = LocalNetworkStatus.current
 
     LaunchedEffect(uiState.error, uiState.successMessage) {
         if (uiState.successMessage != null) {
@@ -77,7 +79,7 @@ fun SocialScreen(
 
     Scaffold(
         floatingActionButton = {
-            if (selectedTab == 0) {
+            if (selectedTab == 0 && isOnline) {
                 FloatingActionButton(
                     onClick = { showAddFriendDialog = true },
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -98,7 +100,7 @@ fun SocialScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 24.dp, bottom = 16.dp, start = 8.dp),
+                    .padding(top = if (isOnline) 24.dp else 8.dp, bottom = 16.dp, start = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
@@ -132,7 +134,8 @@ fun SocialScreen(
                         0 -> FriendsTab(
                             friends = uiState.friends,
                             onFriendClick = onFriendClick,
-                            onRemoveFriend = { viewModel.removeFriend(it) }
+                            onRemoveFriend = { viewModel.removeFriend(it) },
+                            isOnline = isOnline
                         )
 
                         1 -> FriendRequestsTab(
@@ -140,7 +143,8 @@ fun SocialScreen(
                             sentRequests = uiState.sentRequests,
                             onAccept = { viewModel.acceptRequest(it) },
                             onReject = { viewModel.rejectRequest(it.id) },
-                            onCancelSent = { requestId -> viewModel.cancelSentRequest(requestId) }
+                            onCancelSent = { requestId -> viewModel.cancelSentRequest(requestId) },
+                            isOnline = isOnline
                         )
                     }
                 }

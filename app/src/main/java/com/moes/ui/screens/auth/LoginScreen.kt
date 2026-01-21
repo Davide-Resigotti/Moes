@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.moes.ui.LocalNetworkStatus
 import com.moes.ui.composables.auth.AuthForm
 import com.moes.ui.composables.auth.GoogleLoginButton
 import com.moes.ui.composables.auth.rememberGoogleLoginLauncher
@@ -26,6 +27,8 @@ import com.moes.ui.viewmodels.AuthViewModel
 fun LoginScreen(viewModel: AuthViewModel, onGoToRegister: () -> Unit) {
     val launchGoogleLogin = rememberGoogleLoginLauncher(viewModel)
 
+    val isOnline = LocalNetworkStatus.current
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
@@ -34,7 +37,7 @@ fun LoginScreen(viewModel: AuthViewModel, onGoToRegister: () -> Unit) {
                 title = "Bentornato!",
                 buttonText = "Accedi",
                 viewModel = viewModel,
-                onSubmit = { viewModel.onLoginClick() },
+                onSubmit = { if (isOnline) viewModel.onLoginClick() },
                 footer = {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,

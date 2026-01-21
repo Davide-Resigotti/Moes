@@ -60,6 +60,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.moes.ui.LocalNetworkStatus
 import com.moes.ui.composables.sessions.SessionRouteMap
 import com.moes.ui.viewmodels.SessionDetailViewModel
 import com.moes.ui.viewmodels.ViewModelFactory
@@ -80,6 +81,7 @@ fun SessionDetailScreen(
     val session by viewModel.session.collectAsState()
     val userProfile by viewModel.userProfile.collectAsState()
     val focusManager = LocalFocusManager.current
+    val isOnline = LocalNetworkStatus.current
 
     var titleText by remember { mutableStateOf("") }
     var titleError by remember { mutableStateOf<String?>(null) }
@@ -306,12 +308,13 @@ fun SessionDetailScreen(
                     val hasChanges = titleText.trim() != s.title
                     val isValid = titleText.isNotBlank() && titleError == null
 
+                    // BOTTONE SALVA
                     Button(
                         onClick = { viewModel.saveTitle(titleText) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
-                        enabled = hasChanges && isValid,
+                        enabled = hasChanges && isValid && isOnline,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -330,6 +333,7 @@ fun SessionDetailScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
+                        enabled = isOnline,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer,
                             contentColor = MaterialTheme.colorScheme.onErrorContainer
