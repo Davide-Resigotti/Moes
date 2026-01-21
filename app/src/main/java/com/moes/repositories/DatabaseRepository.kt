@@ -1,22 +1,23 @@
 package com.moes.repositories
 
+import androidx.room.withTransaction
 import com.moes.data.TrainingSession
 import com.moes.data.UserProfile
 import com.moes.data.UserStatistics
+import com.moes.data.local.AppDatabase
 import com.moes.data.local.StatisticsDao
 import com.moes.data.local.TrainingDao
 import com.moes.data.local.UserDao
 import com.moes.data.remote.FirestoreDataSource
 import com.moes.utils.StatisticsUtils
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.withContext
 
 class DatabaseRepository(
     private val trainingDao: TrainingDao,
     private val userDao: UserDao,
     private val statisticsDao: StatisticsDao,
+    private val database: AppDatabase,
     private val firestoreDataSource: FirestoreDataSource,
 ) {
     // --- SESSIONS ---
@@ -171,18 +172,29 @@ class DatabaseRepository(
     }
 
     suspend fun migrateGuestData(realUserId: String) {
-        withContext(Dispatchers.IO) {
+        val remoteStats = try {
+            firestoreDataSource.getUserStatistics(realUserId)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+
+        val remoteProfile = try {
+            firestoreDataSource.getUserProfile(realUserId)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+
+        database.withTransaction {
             trainingDao.migrateGuestSessionsToUser(realUserId)
 
             val guestStats = statisticsDao.getStatistics(AuthRepository.GUEST_ID)
             if (guestStats != null) {
                 var targetStats = statisticsDao.getStatistics(realUserId)
-                try {
-                    val remoteStats = firestoreDataSource.getUserStatistics(realUserId)
-                    if (remoteStats != null) {
-                        targetStats = remoteStats
-                    }
-                } catch (e: Exception) {
+
+                if (remoteStats != null) {
+                    targetStats = remoteStats
                 }
 
                 val mergedStats = StatisticsUtils.mergeStatistics(guestStats, targetStats)
@@ -190,35 +202,36 @@ class DatabaseRepository(
 
                 statisticsDao.saveStatistics(mergedStats)
             }
-
             statisticsDao.deleteStatistics(AuthRepository.GUEST_ID)
 
             userDao.migrateGuestProfile(realUserId)
 
-            var localProfile = userDao.getUserProfile(realUserId).firstOrNull()
-            try {
-                val remoteProfile = firestoreDataSource.getUserProfile(realUserId)
-                if (remoteProfile == null) {
-                    if (localProfile == null) {
-                        localProfile = UserProfile(userId = realUserId)
-                        userDao.saveUserProfile(localProfile)
-                    }
-                    firestoreDataSource.saveUserProfile(localProfile)
-                } else {
-                    if (localProfile != null && localProfile.lastEdited > remoteProfile.lastEdited) {
-                        firestoreDataSource.saveUserProfile(localProfile)
-                    } else {
-                        userDao.saveUserProfile(remoteProfile)
-                    }
+            var localProfile = userDao.getUserProfileOneShot(realUserId)
+
+            if (remoteProfile != null) {
+                userDao.saveUserProfile(remoteProfile)
+            } else {
+                if (localProfile == null) {
+                    localProfile = UserProfile(userId = realUserId)
+                    userDao.saveUserProfile(localProfile)
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
 
             userDao.deleteUserProfile(AuthRepository.GUEST_ID)
+        }
+
+        try {
+            if (remoteProfile == null) {
+                val finalLocalProfile = userDao.getUserProfile(realUserId).firstOrNull()
+                if (finalLocalProfile != null) {
+                    firestoreDataSource.saveUserProfile(finalLocalProfile)
+                }
+            }
 
             syncPendingSessions()
             syncUserStats(realUserId)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }

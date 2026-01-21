@@ -288,16 +288,20 @@ fun HomeScreen(
 
         map.location.apply {
             enabled = true
-            puckBearingEnabled = trainingState != TrainingState.RUNNING
 
-            puckBearing = when {
-                trainingState == TrainingState.IDLE -> PuckBearing.HEADING
-                else -> PuckBearing.COURSE
+            puckBearingEnabled = true
+
+            puckBearing = if (trainingState == TrainingState.IDLE) {
+                PuckBearing.HEADING
+            } else {
+                PuckBearing.COURSE
             }
         }
 
         if (trainingState == TrainingState.RUNNING) {
             navigationCamera?.requestNavigationCameraToFollowing()
+        } else if (trainingState == TrainingState.IDLE) {
+            navigationCamera?.requestNavigationCameraToOverview()
         }
     }
 

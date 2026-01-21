@@ -41,6 +41,7 @@ class MoesApplication : Application() {
                 database.trainingDao(),
                 database.userDao(),
                 database.statisticsDao(),
+                database,
                 firestoreDataSource
             )
         trainingRepository = TrainingRepository(this, databaseRepository, authRepository)

@@ -12,6 +12,9 @@ interface UserDao {
     @Query("SELECT * FROM user_profile WHERE userId = :userId")
     fun getUserProfile(userId: String): Flow<UserProfile?>
 
+    @Query("SELECT * FROM user_profile WHERE userId = :userId")
+    suspend fun getUserProfileOneShot(userId: String): UserProfile?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun saveUserProfile(profile: UserProfile)
 
