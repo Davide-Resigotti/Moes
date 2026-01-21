@@ -76,7 +76,7 @@ fun MoesNavHost() {
     val items = listOf(Screen.Home, Screen.Sessions, Screen.Account)
 
     val navBarHeight = 64.dp
-    val navBarBottomMargin = 24.dp
+    val navBarBottomMargin = 16.dp
     val navBarHorizontalMargin = 24.dp
     val navBarShape = CircleShape
 
