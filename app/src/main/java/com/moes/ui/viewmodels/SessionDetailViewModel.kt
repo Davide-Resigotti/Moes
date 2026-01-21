@@ -8,6 +8,7 @@ import com.moes.repositories.DatabaseRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class SessionDetailViewModel(
@@ -22,12 +23,15 @@ class SessionDetailViewModel(
 
     fun loadSession(sessionId: String) {
         viewModelScope.launch {
-            val result = databaseRepository.getSessionById(sessionId)
-            _session.value = result
+            databaseRepository.getSessionByIdFlow(sessionId).collectLatest { result ->
+                _session.value = result
 
-            result?.let { session ->
-                databaseRepository.getUserProfile(session.userId).collect { profile ->
-                    _userProfile.value = profile
+                if (result != null && _userProfile.value == null) {
+                    launch {
+                        databaseRepository.getUserProfile(result.userId).collect { profile ->
+                            _userProfile.value = profile
+                        }
+                    }
                 }
             }
         }
@@ -42,7 +46,6 @@ class SessionDetailViewModel(
         viewModelScope.launch {
             try {
                 databaseRepository.updateSessionTitle(currentSession.id, trimmedTitle)
-                _session.value = currentSession.copy(title = trimmedTitle)
                 databaseRepository.syncPendingSessions()
             } catch (e: Exception) {
                 e.printStackTrace()
