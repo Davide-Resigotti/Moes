@@ -64,10 +64,16 @@ class DatabaseRepository(
 
         trainingDao.softDeleteSession(id)
 
+        // Recalculate stats immediately to reflect deletion locally
+        recalculateUserStatistics(session.userId)
+
         if (session.userId != AuthRepository.GUEST_ID) {
             try {
                 firestoreDataSource.softDeleteSession(session.userId, id)
                 trainingDao.markAsSynced(id)
+                
+                // Sync the updated stats to cloud
+                syncUserStats(session.userId)
             } catch (e: Exception) {
             }
         }
@@ -137,6 +143,19 @@ class DatabaseRepository(
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    private suspend fun recalculateUserStatistics(userId: String) {
+        val sessions = trainingDao.getAllSessionsForUserSync(userId)
+        // Start with clean stats
+        var stats = UserStatistics(userId = userId)
+
+        // Replay all sessions to rebuild stats including streaks
+        sessions.forEach { session ->
+            stats = StatisticsUtils.calculateNewStatistics(stats, session)
+        }
+
+        statisticsDao.saveStatistics(stats)
     }
 
     suspend fun syncFromCloud(userId: String) {
