@@ -5,8 +5,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,9 +28,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.moes.ui.composables.profile.AccountHeader
 import com.moes.ui.composables.profile.EditProfileDialog
-import com.moes.ui.composables.social.FriendsSummaryCard
 import com.moes.ui.composables.profile.MissionCard
 import com.moes.ui.composables.profile.PhysicalStatsCard
+import com.moes.ui.composables.social.FriendsSummaryCard
 import com.moes.ui.viewmodels.MissionsViewModel
 import com.moes.ui.viewmodels.ProfileViewModel
 import com.moes.ui.viewmodels.SocialViewModel
@@ -48,6 +51,9 @@ fun AccountScreen(
     val socialState by socialViewModel.uiState.collectAsState()
 
     var showEditDialog by remember { mutableStateOf(false) }
+
+    val systemBottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val listBottomPadding = 100.dp + systemBottomPadding
 
     if (showEditDialog) {
         EditProfileDialog(
@@ -70,7 +76,7 @@ fun AccountScreen(
                 top = 16.dp,
                 start = 20.dp,
                 end = 20.dp,
-                bottom = 130.dp
+                bottom = listBottomPadding
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
