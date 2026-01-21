@@ -97,9 +97,8 @@ fun EditProfileDialog(
         val baseContext = LocalContext.current
         val italianLocale = Locale.ITALIAN
         val localizedContext = remember(baseContext) {
-            val config = baseContext.resources.configuration.apply {
-                setLocale(italianLocale)
-            }
+            val config = android.content.res.Configuration(baseContext.resources.configuration)
+            config.setLocale(italianLocale)
             baseContext.createConfigurationContext(config)
         }
         
