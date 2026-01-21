@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 data class SocialUiState(
     val friends: List<Friend> = emptyList(),
     val pendingRequests: List<FriendRequest> = emptyList(),
+    val sentRequests: List<FriendRequest> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val successMessage: String? = null
@@ -62,6 +63,16 @@ class SocialViewModel(
                     _uiState.update { it.copy(pendingRequests = emptyList()) }
                 }.collect { requests ->
                     _uiState.update { it.copy(pendingRequests = requests) }
+                }
+            }
+
+            launch {
+                currentUserId.flatMapLatest { userId ->
+                    socialRepository.getSentRequests(userId)
+                }.catch { e ->
+                    _uiState.update { it.copy(sentRequests = emptyList()) }
+                }.collect { sent ->
+                    _uiState.update { it.copy(sentRequests = sent) }
                 }
             }
         }
@@ -110,6 +121,26 @@ class SocialViewModel(
             _uiState.update { it.copy(isLoading = true) }
             val result = socialRepository.rejectRequest(requestId)
             handleRequestResult(result, "Richiesta rifiutata.")
+        }
+    }
+
+    fun cancelSentRequest(requestId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = socialRepository.cancelSentRequest(requestId)
+
+            if (result.isSuccess) {
+                _uiState.update {
+                    it.copy(isLoading = false, successMessage = "Richiesta annullata.")
+                }
+            } else {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "Errore: ${result.exceptionOrNull()?.message}"
+                    )
+                }
+            }
         }
     }
 
