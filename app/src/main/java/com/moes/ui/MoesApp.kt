@@ -20,12 +20,15 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.core.content.ContextCompat
 import com.moes.ui.navigation.MoesNavHost
 import com.moes.ui.screens.LocationPermissionScreen
+import com.moes.ui.screens.SplashScreen
 import com.moes.ui.theme.MoesTheme
 
 @Composable
 fun MoesApp() {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
+
+    var showSplash by remember { mutableStateOf(true) }
 
     var hasLocationPermission by remember {
         mutableStateOf(
@@ -43,14 +46,13 @@ fun MoesApp() {
         }
     )
 
-    LaunchedEffect(Unit) {
-        if (!hasLocationPermission) {
+    LaunchedEffect(showSplash) {
+        if (!showSplash && !hasLocationPermission) {
             permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
     }
 
     MoesTheme {
-        // Wrap the entire app with tap-outside-to-dismiss focus handling
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -58,14 +60,18 @@ fun MoesApp() {
                     detectTapGestures(onTap = { focusManager.clearFocus() })
                 }
         ) {
-            if (hasLocationPermission) {
-                MoesNavHost()
+            if (showSplash) {
+                SplashScreen(onComplete = { showSplash = false })
             } else {
-                LocationPermissionScreen(
-                    onRequestPermission = {
-                        permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                    }
-                )
+                if (hasLocationPermission) {
+                    MoesNavHost()
+                } else {
+                    LocationPermissionScreen(
+                        onRequestPermission = {
+                            permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                        }
+                    )
+                }
             }
         }
     }
