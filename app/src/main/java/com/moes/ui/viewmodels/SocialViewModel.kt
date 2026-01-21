@@ -32,7 +32,7 @@ class SocialViewModel(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(SocialUiState())
+    private val _uiState = MutableStateFlow(SocialUiState(isLoading = true))
     val uiState: StateFlow<SocialUiState> = _uiState.asStateFlow()
 
     private val currentUserId = MutableStateFlow(authRepository.currentUserIdSafe)
@@ -50,9 +50,9 @@ class SocialViewModel(
                 currentUserId.flatMapLatest { userId ->
                     socialRepository.getMyFriends(userId)
                 }.catch { e ->
-                    _uiState.update { it.copy(friends = emptyList()) }
+                    _uiState.update { it.copy(friends = emptyList(), isLoading = false) }
                 }.collect { friends ->
-                    _uiState.update { it.copy(friends = friends) }
+                    _uiState.update { it.copy(friends = friends, isLoading = false) }
                 }
             }
 

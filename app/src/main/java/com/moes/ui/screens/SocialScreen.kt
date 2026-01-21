@@ -128,25 +128,42 @@ fun SocialScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Box(modifier = Modifier.fillMaxSize()) {
-                if (uiState.isLoading && uiState.friends.isEmpty() && uiState.pendingRequests.isEmpty() && !showAddFriendDialog) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                } else {
-                    when (selectedTab) {
-                        0 -> FriendsTab(
-                            friends = uiState.friends,
-                            onFriendClick = onFriendClick,
-                            onRemoveFriend = { viewModel.removeFriend(it) },
-                            isOnline = isOnline
-                        )
+                when (selectedTab) {
+                    0 -> {
+                        // TAB AMICI
+                        if (uiState.isLoading && uiState.friends.isEmpty()) {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
+                            }
+                        } else {
+                            FriendsTab(
+                                friends = uiState.friends,
+                                onFriendClick = onFriendClick,
+                                onRemoveFriend = { viewModel.removeFriend(it) },
+                                isOnline = isOnline
+                            )
+                        }
+                    }
 
-                        1 -> FriendRequestsTab(
-                            receivedRequests = uiState.pendingRequests,
-                            sentRequests = uiState.sentRequests,
-                            onAccept = { viewModel.acceptRequest(it) },
-                            onReject = { viewModel.rejectRequest(it.id) },
-                            onCancelSent = { requestId -> viewModel.cancelSentRequest(requestId) },
-                            isOnline = isOnline
-                        )
+                    1 -> {
+                        // TAB RICHIESTE
+                        val isListEmpty =
+                            uiState.pendingRequests.isEmpty() && uiState.sentRequests.isEmpty()
+
+                        if (uiState.isLoading && isListEmpty) {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
+                            }
+                        } else {
+                            FriendRequestsTab(
+                                receivedRequests = uiState.pendingRequests,
+                                sentRequests = uiState.sentRequests,
+                                onAccept = { viewModel.acceptRequest(it) },
+                                onReject = { viewModel.rejectRequest(it.id) },
+                                onCancelSent = { requestId -> viewModel.cancelSentRequest(requestId) },
+                                isOnline = isOnline
+                            )
+                        }
                     }
                 }
             }

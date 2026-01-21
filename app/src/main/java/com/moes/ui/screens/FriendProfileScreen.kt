@@ -108,161 +108,163 @@ fun FriendProfileScreen(
             )
         }
     ) { padding ->
-        when (friendInfo) {
-            null if socialUiState.isLoading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        if (friendInfo == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                if (socialUiState.isLoading) {
                     CircularProgressIndicator()
+                } else {
+                    Text(
+                        text = "Utente non trovato o rimosso dagli amici.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // HEADER
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(contentAlignment = Alignment.BottomCenter) {
+                            // AVATAR
+                            Box(
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(LogoGradientStart, LogoGradientEnd)
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = initials,
+                                    style = MaterialTheme.typography.displayMedium.copy(
+                                        fontWeight = FontWeight.Bold, color = Color.White
+                                    )
+                                )
+                            }
 
-            null -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Utente non trovato o rimosso dagli amici.")
-                }
-            }
-
-            else -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentPadding = PaddingValues(bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // HEADER
-                    item {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Box(contentAlignment = Alignment.BottomCenter) {
-                                // AVATAR
+                            // BADGE STREAK
+                            if (showStreak) {
                                 Box(
                                     modifier = Modifier
-                                        .size(100.dp)
+                                        .offset(y = 10.dp)
+                                        .shadow(4.dp, CircleShape)
+                                        .border(
+                                            3.dp,
+                                            MaterialTheme.colorScheme.background,
+                                            CircleShape
+                                        )
                                         .clip(CircleShape)
                                         .background(
                                             brush = Brush.linearGradient(
-                                                colors = listOf(LogoGradientStart, LogoGradientEnd)
-                                            )
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = initials,
-                                        style = MaterialTheme.typography.displayMedium.copy(
-                                            fontWeight = FontWeight.Bold, color = Color.White
-                                        )
-                                    )
-                                }
-
-                                // BADGE STREAK
-                                if (showStreak) {
-                                    Box(
-                                        modifier = Modifier
-                                            .offset(y = 10.dp)
-                                            .shadow(4.dp, CircleShape)
-                                            .border(
-                                                3.dp,
-                                                MaterialTheme.colorScheme.background,
-                                                CircleShape
-                                            )
-                                            .clip(CircleShape)
-                                            .background(
-                                                brush = Brush.linearGradient(
-                                                    colors = listOf(
-                                                        LogoGradientStart,
-                                                        LogoGradientEnd
-                                                    )
+                                                colors = listOf(
+                                                    LogoGradientStart,
+                                                    LogoGradientEnd
                                                 )
                                             )
-                                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                                    ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(text = streakEmoji, fontSize = 14.sp)
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = "$currentStreak",
-                                                style = MaterialTheme.typography.labelMedium.copy(
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 14.sp
-                                                ),
-                                                color = Color.White
-                                            )
-                                        }
+                                        )
+                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(text = streakEmoji, fontSize = 14.sp)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "$currentStreak",
+                                            style = MaterialTheme.typography.labelMedium.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 14.sp
+                                            ),
+                                            color = Color.White
+                                        )
                                     }
                                 }
                             }
+                        }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
+                        Text(
+                            text = displayName,
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+
+                        if (sinceDate > 0) {
                             Text(
-                                text = displayName,
-                                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onBackground
+                                text = "Amici dal ${FormatUtils.formatDate(sinceDate)}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+                    }
+                }
 
-                            if (sinceDate > 0) {
+                // MISSIONI
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Missioni e Traguardi",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+
+                if (friendStats == null) {
+                    item {
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(100.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isOnline) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(32.dp),
+                                    strokeWidth = 3.dp
+                                )
+                            } else {
                                 Text(
-                                    text = "Amici dal ${FormatUtils.formatDate(sinceDate)}",
+                                    text = "Statistiche non disponibili offline.",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
                     }
-
-                    // MISSIONI
+                } else if (friendMissions.isEmpty()) {
                     item {
-                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Missioni e Traguardi",
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                            modifier = Modifier.padding(horizontal = 24.dp),
-                            color = MaterialTheme.colorScheme.onBackground
+                            text = "Nessuna missione completata.",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-
-                    if (friendStats == null) {
-                        item {
-                            Box(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .height(100.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (isOnline) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(32.dp),
-                                        strokeWidth = 3.dp
-                                    )
-                                } else {
-                                    Text(
-                                        "Statistiche non disponibili offline.",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                    } else if (friendMissions.isEmpty()) {
-                        item {
-                            Text(
-                                text = "Nessuna missione completata.",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(24.dp),
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    } else {
-                        items(friendMissions) { mission ->
-                            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                                MissionCard(progress = mission)
-                            }
+                } else {
+                    items(friendMissions) { mission ->
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            MissionCard(progress = mission)
                         }
                     }
                 }
