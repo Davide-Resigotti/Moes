@@ -165,6 +165,10 @@ class FirestoreDataSource {
         db.collection("friend_requests").document(requestId).update("status", "REJECTED").await()
     }
 
+    suspend fun cancelSentRequest(requestId: String) {
+        db.collection("friend_requests").document(requestId).delete().await()
+    }
+
     suspend fun removeFriend(myId: String, friendId: String) {
         val batch = db.batch()
 
@@ -213,6 +217,36 @@ class FirestoreDataSource {
     fun getIncomingRequestsFlow(myUserId: String): Flow<List<FriendRequest>> = callbackFlow {
         val registration = db.collection("friend_requests").whereEqualTo("toUserId", myUserId)
             .whereEqualTo("status", "PENDING").addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                val requests = snapshot?.documents?.mapNotNull { doc ->
+                    try {
+                        FriendRequest(
+                            id = doc.id,
+                            fromUserId = doc.getString("fromUserId") ?: "",
+                            fromUserName = doc.getString("fromUserName") ?: "",
+                            toUserId = doc.getString("toUserId") ?: "",
+                            timestamp = doc.getLong("timestamp") ?: 0L
+                        )
+                    } catch (e: Exception) {
+                        null
+                    }
+                } ?: emptyList()
+
+                trySend(requests)
+            }
+
+        awaitClose { registration.remove() }
+    }
+
+    fun getSentRequestsFlow(myUserId: String): Flow<List<FriendRequest>> = callbackFlow {
+        val registration = db.collection("friend_requests")
+            .whereEqualTo("fromUserId", myUserId)
+            .whereEqualTo("status", "PENDING")
+            .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     close(error)
                     return@addSnapshotListener

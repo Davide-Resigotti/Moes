@@ -136,9 +136,11 @@ fun SocialScreen(
                         )
 
                         1 -> FriendRequestsTab(
-                            requests = uiState.pendingRequests,
+                            receivedRequests = uiState.pendingRequests,
+                            sentRequests = uiState.sentRequests,
                             onAccept = { viewModel.acceptRequest(it) },
-                            onReject = { viewModel.rejectRequest(it.id) }
+                            onReject = { viewModel.rejectRequest(it.id) },
+                            onCancelSent = { requestId -> viewModel.cancelSentRequest(requestId) }
                         )
                     }
                 }
