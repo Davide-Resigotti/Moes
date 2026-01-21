@@ -29,6 +29,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.mapbox.geojson.Point
 import com.mapbox.maps.EdgeInsets
+import com.mapbox.maps.MapInitOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.Style
 import com.mapbox.maps.plugin.annotation.annotations
@@ -157,7 +158,9 @@ private fun InternalMap(
     AndroidView(
         modifier = modifier,
         factory = { ctx ->
-            MapView(ctx).apply {
+            val options = MapInitOptions(ctx, textureView = true)
+
+            MapView(ctx, options).apply {
                 mapboxMap.loadStyle(mapStyleUri)
 
                 scalebar.enabled = false
