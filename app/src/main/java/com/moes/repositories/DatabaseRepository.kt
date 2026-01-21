@@ -96,6 +96,10 @@ class DatabaseRepository(
         }
     }
 
+    suspend fun saveLocalUserProfile(profile: UserProfile) {
+        userDao.saveUserProfile(profile)
+    }
+
     fun getUserStatisticsFlow(userId: String): Flow<UserStatistics?> {
         return statisticsDao.getStatisticsFlow(userId)
     }

@@ -63,7 +63,11 @@ class ProfileViewModel(
                     userId = userId,
                     email = currentEmail
                 )
-                saveProfileInternal(emptyProfile)
+                // Use local save only to avoid overwriting potential remote data
+                // before sync completes
+                viewModelScope.launch {
+                    databaseRepository.saveLocalUserProfile(emptyProfile)
+                }
                 emptyProfile
 
             } else {
