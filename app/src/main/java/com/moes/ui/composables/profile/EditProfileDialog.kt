@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,9 +47,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalContext
+import android.view.ContextThemeWrapper
 import com.moes.data.UserProfile
 import com.moes.utils.FormatUtils
 import java.util.Calendar
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,19 +93,38 @@ fun EditProfileDialog(
             }
         )
 
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { birthDate = it }
-                    showDatePicker = false
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Annulla") }
+        // Force Italian locale for DatePicker
+        val baseContext = LocalContext.current
+        val italianLocale = Locale.ITALIAN
+        val localizedContext = remember(baseContext) {
+            val config = android.content.res.Configuration(baseContext.resources.configuration)
+            config.setLocale(italianLocale)
+            baseContext.createConfigurationContext(config)
+        }
+        
+        CompositionLocalProvider(LocalContext provides localizedContext) {
+            DatePickerDialog(
+                onDismissRequest = { showDatePicker = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        datePickerState.selectedDateMillis?.let { birthDate = it }
+                        showDatePicker = false
+                    }) { Text("OK") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDatePicker = false }) { Text("Annulla") }
+                }
+            ) {
+                DatePicker(
+                    state = datePickerState,
+                    title = {
+                        Text(
+                            text = "Seleziona data",
+                            modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 16.dp)
+                        )
+                    }
+                )
             }
-        ) {
-            DatePicker(state = datePickerState)
         }
     }
 
