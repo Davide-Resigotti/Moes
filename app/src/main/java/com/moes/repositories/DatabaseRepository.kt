@@ -222,32 +222,47 @@ class DatabaseRepository(
             }
             statisticsDao.deleteStatistics(AuthRepository.GUEST_ID)
 
-            userDao.migrateGuestProfile(realUserId)
+            val guestProfile = userDao.getUserProfileOneShot(AuthRepository.GUEST_ID)
 
-            var localProfile = userDao.getUserProfileOneShot(realUserId)
+            if (guestProfile != null) {
+                val targetProfile = remoteProfile ?: userDao.getUserProfileOneShot(realUserId)
 
-            if (remoteProfile != null) {
-                userDao.saveUserProfile(remoteProfile)
+                val mergedProfile = targetProfile?.copy(
+                    userId = realUserId,
+                    firstName = targetProfile.firstName.ifBlank { guestProfile.firstName },
+                    lastName = targetProfile.lastName.ifBlank { guestProfile.lastName },
+                    weightKg = if (targetProfile.weightKg > 0) targetProfile.weightKg else guestProfile.weightKg,
+                    heightCm = if (targetProfile.heightCm > 0) targetProfile.heightCm else guestProfile.heightCm,
+                    gender = targetProfile.gender.ifBlank { guestProfile.gender },
+                    birthDate = if (targetProfile.birthDate > 0) targetProfile.birthDate else guestProfile.birthDate,
+                    email = targetProfile.email.ifBlank { guestProfile.email },
+
+                    lastEdited = System.currentTimeMillis()
+                )
+                    ?: guestProfile.copy(
+                        userId = realUserId,
+                        lastEdited = System.currentTimeMillis()
+                    )
+
+                userDao.saveUserProfile(mergedProfile)
+                userDao.deleteUserProfile(AuthRepository.GUEST_ID)
             } else {
-                if (localProfile == null) {
-                    localProfile = UserProfile(userId = realUserId)
-                    userDao.saveUserProfile(localProfile)
+                if (remoteProfile != null) {
+                    userDao.saveUserProfile(remoteProfile)
                 }
             }
-
-            userDao.deleteUserProfile(AuthRepository.GUEST_ID)
         }
 
+        // D. SYNC FINALE
         try {
-            if (remoteProfile == null) {
-                val finalLocalProfile = userDao.getUserProfile(realUserId).firstOrNull()
-                if (finalLocalProfile != null) {
-                    firestoreDataSource.saveUserProfile(finalLocalProfile)
-                }
-            }
-
             syncPendingSessions()
             syncUserStats(realUserId)
+
+            // Carichiamo sul cloud il risultato della fusione
+            val finalProfile = userDao.getUserProfileOneShot(realUserId)
+            if (finalProfile != null) {
+                firestoreDataSource.saveUserProfile(finalProfile)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
