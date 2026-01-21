@@ -14,12 +14,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Save
@@ -56,8 +59,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.moes.ui.composables.sessions.SessionRouteMap
 import com.moes.ui.viewmodels.SessionDetailViewModel
@@ -81,6 +82,7 @@ fun SessionDetailScreen(
     val focusManager = LocalFocusManager.current
 
     var titleText by remember { mutableStateOf("") }
+    var titleError by remember { mutableStateOf<String?>(null) }
     var isInitialized by remember { mutableStateOf(false) }
     var showCalorieInfoDialog by remember { mutableStateOf(false) }
 
@@ -95,7 +97,7 @@ fun SessionDetailScreen(
     if (showCalorieInfoDialog) {
         AlertDialog(
             onDismissRequest = { showCalorieInfoDialog = false },
-            containerColor = Color.White,  // ← SFONDO BIANCO
+            containerColor = MaterialTheme.colorScheme.surface,
             icon = { Icon(Icons.Default.Info, contentDescription = null) },
             title = { Text("Calcolo Calorie") },
             text = {
@@ -226,51 +228,48 @@ fun SessionDetailScreen(
                         .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // TITOLO
-                    Surface(
+                    // CAMPO TITOLO
+                    OutlinedTextField(
+                        value = titleText,
+                        onValueChange = {
+                            titleText = it
+                            titleError = if (it.isBlank()) "Il nome non può essere vuoto" else null
+                        },
+                        label = { Text("Nome Allenamento") },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        tonalElevation = 1.dp,
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(vertical = 16.dp, horizontal = 20.dp),
-                            horizontalAlignment = Alignment.Start
-                        ) {
-                            Text(
-                                text = "NOME ALLENAMENTO",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp
-                                ),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            OutlinedTextField(
-                                value = titleText,
-                                onValueChange = { titleText = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                                keyboardActions = KeyboardActions(
-                                    onDone = { focusManager.clearFocus() }
-                                ),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = Color.Transparent
-                                ),
-                                textStyle = MaterialTheme.typography.headlineSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 20.sp
+                        shape = RoundedCornerShape(16.dp),
+                        singleLine = true,
+                        isError = titleError != null,
+                        supportingText = if (titleError != null) {
+                            { Text(titleError!!, color = MaterialTheme.colorScheme.error) }
+                        } else null,
+                        trailingIcon = if (titleError != null) {
+                            {
+                                Icon(
+                                    Icons.Default.Error,
+                                    "Error",
+                                    tint = MaterialTheme.colorScheme.error
                                 )
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        } else null,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(
+                            onDone = { focusManager.clearFocus() }
+                        ),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary,
+                            cursorColor = MaterialTheme.colorScheme.primary,
+                            errorBorderColor = MaterialTheme.colorScheme.error,
+                            errorLabelColor = MaterialTheme.colorScheme.error,
+                            // Background trasparente per stile moderno
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent
+                        ),
+                        textStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                    )
 
                     // DATA E ORARIO
                     FullWidthStatCard(
@@ -304,21 +303,19 @@ fun SessionDetailScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // BOTTONE SALVA
                     val hasChanges = titleText.trim() != s.title
+                    val isValid = titleText.isNotBlank() && titleError == null
+
                     Button(
                         onClick = { viewModel.saveTitle(titleText) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
-                        enabled = hasChanges,
+                        enabled = hasChanges && isValid,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary,
-                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                alpha = 0.5f
-                            )
+                            disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
                         ),
                         shape = CircleShape
                     ) {
