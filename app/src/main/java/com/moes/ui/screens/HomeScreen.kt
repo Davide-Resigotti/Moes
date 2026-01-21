@@ -542,8 +542,7 @@ fun HomeScreen(
                 .navigationBarsPadding()
                 .padding(bottom = buttonsBottomPadding, end = navBarHorizontalMargin)
         ) {
-            val showClearButton =
-                navigationRoutes.isNotEmpty() && trainingState == TrainingState.IDLE
+            val showClearButton = navigationRoutes.isNotEmpty()
 
             if (showClearButton) {
                 // CLEAR BUTTON
