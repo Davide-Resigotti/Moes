@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.moes.data.missions.MissionProgress
@@ -108,17 +109,23 @@ fun MissionCard(progress: MissionProgress) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.Top
                     ) {
                         // Titolo Missione
                         Text(
                             text = def.baseTitle,
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
+                                fontSize = 16.sp,
+                                lineHeight = 20.sp
                             ),
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
+
+                        Spacer(modifier = Modifier.width(8.dp))
 
                         // Badge Livello
                         LevelBadge(
@@ -134,7 +141,8 @@ fun MissionCard(progress: MissionProgress) {
                         style = MaterialTheme.typography.labelMedium.copy(
                             fontWeight = FontWeight.SemiBold,
                             color = levelTitleColor
-                        )
+                        ),
+                        modifier = Modifier.padding(top = 2.dp)
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -245,7 +253,8 @@ private fun LevelBadge(
                 fontSize = 10.sp
             ),
             color = textColor,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            maxLines = 1
         )
     }
 }
