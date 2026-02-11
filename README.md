@@ -9,9 +9,9 @@
 *   **Modern UI**: Designed with Material Design 3 components for a seamless and responsive user experience.
 
 ### Authors
-*   **Giorgio Bonzagni** - 914562
-*   **Alessandro Martinelli** - 914362
-*   **Davide Resigotti** - 914986
+*   **Giorgio Bonzagni** 
+*   **Alessandro Martinelli** 
+*   **Davide Resigotti** 
 
 ---
 
