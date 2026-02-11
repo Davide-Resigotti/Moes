@@ -21,3 +21,6 @@ local.properties
 
 # --- Log files ---
 *.log
+
+# --- Secrets ---
+google-services.json

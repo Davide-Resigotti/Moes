@@ -23,7 +23,12 @@ dependencyResolutionManagement {
             }
             credentials {
                 username = "mapbox"
-                password = providers.gradleProperty("MAPBOX_DOWNLOADS_TOKEN").get()
+                val localProperties = java.util.Properties()
+                val localPropertiesFile = File(rootDir, "local.properties")
+                if (localPropertiesFile.exists()) {
+                    localPropertiesFile.inputStream().use { localProperties.load(it) }
+                }
+                password = localProperties.getProperty("MAPBOX_DOWNLOADS_TOKEN")
             }
         }
     }
